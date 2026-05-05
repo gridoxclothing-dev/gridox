@@ -3,20 +3,20 @@
   <!-- Key Hub Pages -->
   <url>
     <loc>https://gridox.in/</loc>
-    <lastmod>2024-04-08</lastmod>
+    <lastmod>2024-05-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://gridox.in/store-locator</loc>
-    <lastmod>2024-04-08</lastmod>
+    <lastmod>2024-05-05</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://gridox.in/style-guide/coimbatore</loc>
-    <lastmod>2024-04-08</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://gridox.in/new-arrivals</loc>
+    <lastmod>2024-05-05</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
