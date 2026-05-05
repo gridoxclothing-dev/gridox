@@ -11,25 +11,24 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function() {
   // Only hash the password if it has been modified AND exists
   if (!this.isModified('password') || !this.password) {
-    return next();
+    return;
   }
   
   try {
     // Prevent double hashing if somehow called twice
     if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) {
       console.log(`[USER MODEL] Password for ${this.email} already hashed, skipping.`);
-      return next();
+      return;
     }
 
     console.log(`[USER MODEL] Hashing password for ${this.email}...`);
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
   } catch (err) {
-    next(err);
+    throw err;
   }
 });
 

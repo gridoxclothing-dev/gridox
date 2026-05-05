@@ -5,6 +5,7 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const passport = require('passport');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 
 // Configure Nodemailer
 const transporter = nodemailer.createTransport({
@@ -251,15 +252,20 @@ router.post('/login', async (req, res) => {
 
     console.log(`[AUTH] Verifying Login OTP for ${trimmedEmail}: ${trimmedOtp}`);
     const otpRecord = await OTP.findOne({ email: trimmedEmail, otp: trimmedOtp });
+    
     if (!otpRecord) {
-      console.log(`[AUTH] Invalid OTP for ${trimmedEmail}`);
+      console.log(`[AUTH] Invalid OTP for ${trimmedEmail}. Entered: ${trimmedOtp}`);
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
+    console.log(`[AUTH] OTP valid for ${trimmedEmail}. Generating tokens...`);
     const tokens = generateTokens(user);
+    
+    console.log(`[AUTH] Tokens generated for ${trimmedEmail}. Updating user...`);
     user.refreshToken = tokens.refreshToken;
     await user.save();
 
+    console.log(`[AUTH] User updated. Deleting OTP record for ${trimmedEmail}...`);
     // Delete OTP after successful login
     await OTP.deleteOne({ email: trimmedEmail });
 
