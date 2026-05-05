@@ -9,12 +9,14 @@ const mongoose = require('mongoose');
 
 // Configure Nodemailer
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD
   },
-  connectionTimeout: 20000, // 20 seconds
+  connectionTimeout: 20000,
   greetingTimeout: 20000,
   socketTimeout: 20000
 });
