@@ -78,7 +78,7 @@ console.log('Target URI:', maskedURI);
 mongoose.connect(MONGODB_URI, {
   serverSelectionTimeoutMS: 5000 // Timeout after 5 seconds instead of hanging
 })
-  .then(() => console.log('Successfully connected to MongoDB Atlas (database: test)!'))
+  .then(() => console.log(`Successfully connected to MongoDB Atlas (database: ${mongoose.connection.name})!`))
   .catch(err => {
     console.error('❌ MONGODB CONNECTION ERROR:', err.message);
   });
