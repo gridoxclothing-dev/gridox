@@ -197,7 +197,7 @@ app.post('/api/orders', verifyToken, async (req, res) => {
         
         await resend.emails.send({
           from: 'Gridox <no-reply@gridox.in>',
-          to: [userEmail, 'igowthamgk@gmail.com'], // Send to BOTH customer and admin
+          to: [userEmail, 'igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to customer and both admins
           subject: `Order Confirmation - Gridox Fashion`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
@@ -671,7 +671,7 @@ app.post('/api/leads', async (req, res) => {
       // Fire and forget lead notification to avoid UI lag
       transporter.sendMail({
         from: `"Gridox Notification" <${smtpUser}>`,
-        to: smtpUser, // Send to gridoxclothing@gmail.com
+        to: ['igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to both admin emails
         subject: "🎉 New Verified Lead Captured",
         html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; max-width: 500px;">
                 <h2 style="color: #d11243; margin-top: 0;">New Lead Alert</h2>
