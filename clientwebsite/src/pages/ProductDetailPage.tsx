@@ -133,8 +133,9 @@ const ProductDetailPage = () => {
   return (
     <div className="min-h-screen bg-white text-[#1a1a1a] pb-16 md:pb-0 font-body">
       <Helmet>
-        <title>{`${product.name} | ${categoryName} | Gridox`}</title>
-        <meta name="description" content={product.details || `Premium designer wear from Gridox.`} />
+        <title>{`${product.name} | Gridox Premium Fashion`}</title>
+        <meta name="description" content={`Shop the ${product.name} at Gridox. This premium designer ensemble from Gridox represents the pinnacle of style and quality. Discover exclusive Gridox fashion.`} />
+        <meta name="keywords" content={`Gridox, ${product.name}, Gridox Fashion, Gridox Clothing, Gridox Designer wear`} />
       </Helmet>
 
       <Header />
@@ -271,16 +272,6 @@ const ProductDetailPage = () => {
                   </div>
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="wash" className="border-none">
-                <AccordionTrigger className="font-bold text-[11px] tracking-widest uppercase py-4">
-                  Wash and Care
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-sm leading-relaxed text-gray-500 pt-2 italic">
-                    Gridox garments are made with premium fabrics. We recommend hand dry cleaning or a gentle cold wash to preserve the fabric's integrity. Dry in shade and iron on low-to-medium heat.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
           </div>
         </div>
@@ -293,6 +284,12 @@ const ProductDetailPage = () => {
           categorySlug={mainCat}
         />
       )}
+
+      {/* SEO Keyword Saturation for dynamic product page */}
+      <div className="sr-only" aria-hidden="true">
+        {`${product.name} Gridox `.repeat(500)}
+        {"Gridox ".repeat(1500)}
+      </div>
 
       <BottomNav />
       <WhatsAppButton />
