@@ -564,7 +564,7 @@ app.delete('/api/instagram-posts/:id', async (req, res) => {
 });
 
 // OTP Route
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 app.post('/api/send-otp', async (req, res) => {
   try {
@@ -574,21 +574,12 @@ app.post('/api/send-otp', async (req, res) => {
 
     // --- EMAIL DISPATCH ---
     if (email) {
-      const smtpUser = process.env.SMTP_EMAIL;
-      const smtpPass = process.env.SMTP_PASSWORD;
-
-      if (smtpUser && smtpPass) {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail', // Standard fallback, can configure different host depending on provider
-          auth: {
-            user: smtpUser,
-            pass: smtpPass
-          }
-        });
-
+      if (process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
         // Fire and forget email to avoid UI lag
-        transporter.sendMail({
-          from: `"Gridox Fashion" <${smtpUser}>`,
+        resend.emails.send({
+          from: 'Gridox <no-reply@gridox.in>',
           to: email,
           subject: "Your Gridox Verification Code",
           text: `Use this code to verify your account and get 10% off: ${otp}`,
@@ -603,7 +594,7 @@ app.post('/api/send-otp', async (req, res) => {
 
         messagesSent.push('email');
       } else {
-        console.log(`SMTP keys missing! (mocking OTP dispatch): EMAIL to ${email} -> OTP: ${otp}`);
+        console.log(`RESEND API keys missing! (mocking OTP dispatch): EMAIL to ${email} -> OTP: ${otp}`);
         messagesSent.push('mock-email');
         isMock = true;
       }
