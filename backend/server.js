@@ -189,25 +189,55 @@ app.post('/api/orders', verifyToken, async (req, res) => {
     });
     await newOrder.save();
 
-    // Optional email notification
+    // Send email notifications via Resend
     try {
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.SMTP_EMAIL,
-          pass: process.env.SMTP_PASSWORD
-        }
-      });
-      const mailOptions = {
-        from: `"Gridox Fashion" <${process.env.SMTP_EMAIL}>`,
-        to: `${userEmail}, ${process.env.SMTP_EMAIL}`, // Send to BOTH customer and owner
-        subject: `Order Confirmation - Gridox Fashion`,
-        text: `Thank you for your order!\n\nOrder placed by ${userEmail}.\nPhone: ${address.phone}\nDelivery Address: ${address.addressLine}, ${address.pincode}\nTotal Amount: ₹${totalAmount}\n\nItems Ordered:\n${items.map(i => `- ${i.name} (Qty: ${i.quantity})`).join('\n')}\n\nYour order will be processed shortly.`,
-      };
-      await transporter.sendMail(mailOptions);
+      if (process.env.RESEND_API_KEY) {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        await resend.emails.send({
+          from: 'Gridox <no-reply@gridox.in>',
+          to: [userEmail, 'igowthamgk@gmail.com'], // Send to BOTH customer and admin
+          subject: `Order Confirmation - Gridox Fashion`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+              <h2 style="color: #000; text-align: center;">Gridox Order Confirmed</h2>
+              <p>Thank you for your order!</p>
+              <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h3 style="margin-top: 0;">Delivery Details:</h3>
+                <p><strong>Name:</strong> ${address.name}</p>
+                <p><strong>Phone:</strong> ${address.phone}</p>
+                <p><strong>Address:</strong> ${address.addressLine}, ${address.pincode}</p>
+              </div>
+              <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">Order Summary</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                ${items.map(i => `
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                      <strong>${i.name}</strong><br/>
+                      <small style="color: #666;">Size: ${i.size} | Qty: ${i.quantity}</small>
+                    </td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right;">
+                      ₹${(i.price * i.quantity).toLocaleString()}
+                    </td>
+                  </tr>
+                `).join('')}
+              </table>
+              <div style="margin-top: 20px; text-align: right; font-size: 18px;">
+                <strong>Total Amount: ₹${totalAmount.toLocaleString()}</strong>
+              </div>
+              <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
+                Your order will be processed shortly. If you have any questions, reply to this email.
+              </p>
+            </div>
+          `
+        });
+        console.log(`[ORDER] Confirmation email sent successfully to ${userEmail} and admin`);
+      } else {
+        console.log(`[ORDER] RESEND_API_KEY missing. Order saved but confirmation email skipped.`);
+      }
     } catch (err) {
-      console.error('Email notification failed, but order saved:', err);
+      console.error('[ORDER] Email notification failed, but order saved:', err);
     }
 
     res.status(201).json({ message: 'Order placed successfully', orderId: newOrder._id });
