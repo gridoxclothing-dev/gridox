@@ -11,16 +11,18 @@ console.log(`[AUTH] SMTP Config Check: user=${!!process.env.SMTP_EMAIL}, pass=${
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false, // Use STARTTLS
+  secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD
   },
+  family: 4, // Force IPv4 to avoid Render network issues with IPv6
   logger: true,
   debug: true,
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
-  socketTimeout: 20000
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000
 });
 
 // Helper to send OTP
