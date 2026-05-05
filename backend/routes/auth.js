@@ -10,12 +10,14 @@ const mongoose = require('mongoose');
 console.log(`[AUTH] SMTP Config Check: user=${!!process.env.SMTP_EMAIL}, pass=${!!process.env.SMTP_PASSWORD}`);
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD
   },
+  logger: true,
+  debug: true,
   connectionTimeout: 20000,
   greetingTimeout: 20000,
   socketTimeout: 20000
@@ -235,14 +237,6 @@ router.post('/login', async (req, res) => {
         console.log(`Login OTP emailed successfully to ${trimmedEmail}`);
       } catch (mailError) {
         console.error(`[AUTH] Failed to email login OTP:`, mailError);
-        // Temporary bypass/debug for the user
-        if (trimmedEmail === 'gogulpvt@gmail.com') {
-          return res.status(200).json({ 
-            message: 'OTP sent (Email bypassed for gogulpvt@gmail.com)', 
-            otpRequired: true,
-            warning: 'SMTP Error: ' + mailError.message
-          });
-        }
         return res.status(500).json({ 
           message: 'Failed to send verification email. Please try again later.',
           error: mailError.message 
@@ -256,14 +250,8 @@ router.post('/login', async (req, res) => {
     const trimmedOtp = otp.trim();
 
     console.log(`[AUTH] Verifying Login OTP for ${trimmedEmail}: ${trimmedOtp}`);
-    let otpRecord = await OTP.findOne({ email: trimmedEmail, otp: trimmedOtp });
+    const otpRecord = await OTP.findOne({ email: trimmedEmail, otp: trimmedOtp });
     
-    // Hardcoded bypass for the user
-    if (!otpRecord && trimmedEmail === 'gogulpvt@gmail.com' && trimmedOtp === '123456') {
-      console.log(`[AUTH] Bypassing OTP for ${trimmedEmail} with code 123456`);
-      otpRecord = { email: trimmedEmail, otp: '123456' };
-    }
-
     if (!otpRecord) {
       console.log(`[AUTH] Invalid OTP for ${trimmedEmail}. Entered: ${trimmedOtp}`);
       return res.status(400).json({ message: 'Invalid or expired OTP' });
