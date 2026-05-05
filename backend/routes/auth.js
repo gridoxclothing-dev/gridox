@@ -33,6 +33,7 @@ router.get('/debug-smtp', async (req, res) => {
     console.log('[AUTH] SMTP verification successful');
     res.json({ 
       status: 'SMTP connection successful',
+      db: mongoose.connection.name,
       config: {
         host: transporter.options.host,
         port: transporter.options.port,
