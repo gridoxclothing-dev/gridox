@@ -204,7 +204,7 @@ app.post('/api/orders', verifyToken, async (req, res) => {
         text: `Thank you for your order!\n\nOrder placed by ${userEmail}.\nPhone: ${address.phone}\nDelivery Address: ${address.addressLine}, ${address.pincode}\nTotal Amount: ₹${totalAmount}\n\nItems Ordered:\n${items.map(i => `- ${i.name} (Qty: ${i.quantity})`).join('\n')}\n\nYour order will be processed shortly.`,
       };
       await transporter.sendMail(mailOptions);
-    } catch(err) {
+    } catch (err) {
       console.error('Email notification failed, but order saved:', err);
     }
 
