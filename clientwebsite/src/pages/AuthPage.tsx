@@ -65,8 +65,9 @@ const AuthPage = () => {
     e.preventDefault();
 
     const trimmedEmail = formData.email.trim().toLowerCase();
+    const trimmedPassword = formData.password.trim();
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
+    if (!isLogin && trimmedPassword !== formData.confirmPassword.trim()) {
       toast.error('Passwords do not match');
       return;
     }
@@ -78,7 +79,7 @@ const AuthPage = () => {
         // Step 1: Send OTP
         const endpoint = isLogin ? '/auth/login' : '/auth/send-otp';
         const payload = isLogin
-          ? { email: trimmedEmail, password: formData.password }
+          ? { email: trimmedEmail, password: trimmedPassword }
           : { email: trimmedEmail, type: 'signup' };
 
         console.log(`[AUTH] Step 1: Calling ${endpoint} for ${trimmedEmail}`);
@@ -132,6 +133,7 @@ const AuthPage = () => {
         const payload = { 
           ...formData, 
           email: trimmedEmail,
+          password: trimmedPassword,
           otp: otp.trim() 
         };
 
