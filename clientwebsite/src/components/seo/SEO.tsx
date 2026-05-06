@@ -25,7 +25,7 @@ interface SEOProps {
 
 const siteUrl = "https://gridox.in";
 const siteName = "Gridox";
-const defaultImage = `${siteUrl}/og-image.jpg`;
+const defaultImage = `/logo.jpeg`;
 
 export const SEO = ({
   title,
