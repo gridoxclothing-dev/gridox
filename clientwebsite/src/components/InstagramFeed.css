@@ -42,7 +42,7 @@
   width: 44px;
   height: 44px;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(0, 0, 0, 0.5);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -66,7 +66,7 @@
   flex: 0 0 calc(25% - 1.2rem);
   min-width: 280px;
   background: var(--background);
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.5);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
@@ -126,7 +126,7 @@
 .insta-username {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #000000;
   line-height: 1.2;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .insta-more-icon {
-  color: #1a1a1a;
+  color: #000000;
   cursor: pointer;
 }
 
@@ -161,7 +161,7 @@
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.85);
-  color: #1a1a1a;
+  color: #000000;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -218,7 +218,7 @@
 
 .insta-action-icon {
   cursor: pointer;
-  color: #1a1a1a;
+  color: #000000;
   transition: transform 0.2s ease;
 }
 

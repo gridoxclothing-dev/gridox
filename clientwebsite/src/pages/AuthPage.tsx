@@ -30,7 +30,7 @@ const AuthPage = () => {
       try {
         const response = await fetch('/api/dashboard', { credentials: 'include' });
         if (response.ok) {
-          let redirectPath = searchParams.get('redirect') || '/';
+          const redirectPath = searchParams.get('redirect') || '/';
           navigate(redirectPath);
         }
       } catch (error) {
@@ -176,14 +176,14 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 p-4 font-outfit">
-      <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl border border-black/5 overflow-hidden flex flex-col shadow-stone-200/50">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 font-outfit">
+      <div className="max-w-md w-full bg-card rounded-[2rem] shadow-2xl border border-border/5 overflow-hidden flex flex-col">
         {/* Header Section */}
         <div className="pt-10 pb-6 px-8 text-center bg-gradient-to-b from-stone-50/50 to-transparent">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+          <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
             {showOtp ? 'Verification' : (isLogin ? 'Welcome Back' : 'Create Account')}
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             {showOtp
               ? `Enter the code sent to ${formData.email}`
               : (isLogin ? 'Sign in to your premium account' : 'Join our luxury fashion community')}
@@ -193,17 +193,17 @@ const AuthPage = () => {
         {/* Tab Switcher */}
         {!showOtp && (
           <div className="flex px-8 mb-6">
-            <div className="flex w-full bg-stone-100 p-1 rounded-xl">
+            <div className="flex w-full bg-muted p-1 rounded-xl">
               <button
                 onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${isLogin ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${isLogin ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Login
               </button>
               <button
                 onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!isLogin ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!isLogin ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Sign Up
@@ -222,7 +222,7 @@ const AuthPage = () => {
                   <Input
                     id="name"
                     placeholder="John Doe"
-                    className="pl-10 h-12 rounded-xl border-stone-200 focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+                    className="pl-10 h-12 rounded-xl border-border focus:ring-2 focus:ring-primary/5 focus:border-primary transition-all bg-background text-foreground"
                     value={formData.name}
                     onChange={handleChange}
                     required={!isLogin}
@@ -240,7 +240,7 @@ const AuthPage = () => {
                     id="email"
                     type="email"
                     placeholder="name@example.com"
-                    className="pl-10 h-12 rounded-xl border-stone-200 focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+                    className="pl-10 h-12 rounded-xl border-border focus:ring-2 focus:ring-primary/5 focus:border-primary transition-all bg-background text-foreground"
                     value={formData.email}
                     onChange={handleChange}
                     required
@@ -265,7 +265,7 @@ const AuthPage = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="pl-10 pr-10 h-12 rounded-xl border-stone-200 focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+                    className="pl-10 pr-10 h-12 rounded-xl border-border focus:ring-2 focus:ring-primary/5 focus:border-primary transition-all bg-background text-foreground"
                     value={formData.password}
                     onChange={handleChange}
                     required
@@ -290,7 +290,7 @@ const AuthPage = () => {
                     id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="pl-10 h-12 rounded-xl border-stone-200 focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+                    className="pl-10 h-12 rounded-xl border-border focus:ring-2 focus:ring-primary/5 focus:border-primary transition-all bg-background text-foreground"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required={!isLogin}
@@ -306,7 +306,7 @@ const AuthPage = () => {
                     <Input
                       id="otp"
                       placeholder="000000"
-                      className="h-14 rounded-xl border-stone-300 focus:ring-4 focus:ring-black/5 focus:border-black transition-all text-center tracking-[0.4em] font-bold text-2xl"
+                      className="h-14 rounded-xl border-border focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-center tracking-[0.4em] font-bold text-2xl bg-background text-foreground"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       maxLength={6}
@@ -329,7 +329,7 @@ const AuthPage = () => {
 
             <Button
               type="submit"
-              className="w-full h-12 rounded-xl bg-black hover:bg-stone-800 text-white font-semibold transition-all flex items-center justify-center gap-2 group shadow-xl shadow-stone-200"
+              className="w-full h-12 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold transition-all flex items-center justify-center gap-2 group shadow-xl shadow-primary/20"
               disabled={loading}
             >
               {loading ? (
@@ -350,14 +350,14 @@ const AuthPage = () => {
                   <div className="w-full border-t border-stone-100"></div>
                 </div>
                 <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                  <span className="bg-white px-4 text-stone-400 font-bold">Or</span>
+                  <span className="bg-card px-4 text-muted-foreground font-bold">Or</span>
                 </div>
               </div>
 
               <Button
                 variant="outline"
                 type="button"
-                className="w-full h-12 rounded-xl border-stone-200 hover:bg-stone-50 flex items-center justify-center gap-3 transition-all"
+                className="w-full h-12 rounded-xl border-border hover:bg-muted flex items-center justify-center gap-3 transition-all"
                 onClick={handleGoogleLogin}
               >
                 <Chrome className="w-5 h-5 text-blue-500" />

@@ -57,7 +57,7 @@ export const PromoModal = () => {
       
       if (response.ok) {
         if (data.message && data.message.includes('Mock')) {
-          alert(`Test Mode (No API Keys set): Your OTP for Gridox is ${newOtp}`);
+          alert(`Test Mode (No API Keys set): Your OTP for GriDox is ${newOtp}`);
         }
         setStep('OTP');
       } else {
@@ -111,7 +111,7 @@ export const PromoModal = () => {
       />
 
       {/* Modal Content */}
-      <div className="relative bg-[#F5E6D3] rounded-[16px] shadow-2xl w-[90%] max-w-[400px] md:max-w-4xl max-h-[85vh] flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 z-10 mx-auto">
+      <div className="relative bg-secondary rounded-[16px] shadow-2xl w-[90%] max-w-[400px] md:max-w-4xl max-h-[85vh] flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 z-10 mx-auto">
         
         {/* Close Button */}
         <button 
@@ -130,23 +130,23 @@ export const PromoModal = () => {
             className="w-full h-full object-cover animate-zoom-out"
           />
           <div className="absolute inset-x-0 bottom-0 h-[80%] bg-gradient-to-t from-[#2a1b15]/90 via-[#2a1b15]/40 to-transparent flex flex-col justify-end p-10 pointer-events-none text-left">
-            <span className="text-white/80 text-[10px] tracking-[0.4em] font-bold uppercase mb-2">Gridox Exclusive</span>
+            <span className="text-white/80 text-[10px] tracking-[0.4em] font-bold uppercase mb-2">GriDox Exclusive</span>
             <h3 className="text-white text-5xl font-heading mb-3 drop-shadow-lg leading-tight">10% OFF</h3>
             <p className="text-white/90 text-lg font-body tracking-wide drop-shadow-md border-l-2 border-[#8b231a] pl-3">Your Premium Collection</p>
           </div>
         </div>
 
         {/* Right Side: Form */}
-        <div className="w-full md:w-1/2 bg-[#F5E6D3] p-6 md:p-12 flex flex-col justify-center items-center text-center overflow-y-auto">
-          <h2 className="text-xs md:text-sm font-body font-bold text-[#8b231a] mb-4 md:mb-6 tracking-[0.3em] uppercase opacity-90">Gridox</h2>
+        <div className="w-full md:w-1/2 bg-secondary p-6 md:p-12 flex flex-col justify-center items-center text-center overflow-y-auto">
+          <h2 className="text-xs md:text-sm font-body font-bold text-primary mb-4 md:mb-6 tracking-[0.3em] opacity-90">GriDox</h2>
           
           {step === 'PHONE' && (
             <div className="w-full animate-fade-in flex flex-col items-center">
-              <h3 className="text-4xl md:text-5xl font-heading font-bold text-[#2a1b15] mb-3">Get 10% OFF</h3>
+              <h3 className="text-4xl md:text-5xl font-heading font-bold text-foreground mb-3">Get 10% OFF</h3>
               <p className="text-[#5c4a3d] mb-3 text-sm md:text-base px-2 font-medium">Join now for exclusive fashion drops and early access</p>
               
               <div className="mb-8">
-                <span className="inline-block bg-[#8b231a] text-white font-bold text-xs px-4 py-2 rounded-full tracking-wide shadow-sm">
+                <span className="inline-block bg-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-full tracking-wide shadow-sm">
                   Limited time offer for new users
                 </span>
               </div>
@@ -193,7 +193,7 @@ export const PromoModal = () => {
                   <button 
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-[#2a1b15] text-white py-4 rounded-[12px] font-bold tracking-wider hover:bg-[#3d271f] hover:scale-[1.05] hover:shadow-xl transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100 cursor-pointer disabled:cursor-not-allowed"
+                    className="w-full bg-primary text-primary-foreground py-4 rounded-[12px] font-bold tracking-wider hover:opacity-90 hover:scale-[1.05] hover:shadow-xl transition-all duration-300 disabled:opacity-70 disabled:hover:scale-100 cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? 'Sending...' : 'Send OTP'}
                   </button>
@@ -233,7 +233,7 @@ export const PromoModal = () => {
 
                   <button 
                     type="submit"
-                    className="w-full bg-[#2a1b15] text-white py-4 rounded-[12px] font-bold tracking-wider hover:bg-[#3d271f] hover:scale-[1.05] hover:shadow-xl transition-all duration-300"
+                    className="w-full bg-primary text-primary-foreground py-4 rounded-[12px] font-bold tracking-wider hover:opacity-90 hover:scale-[1.05] hover:shadow-xl transition-all duration-300"
                   >
                     Verify & Claim
                   </button>
@@ -264,13 +264,13 @@ export const PromoModal = () => {
               <p className="text-[#5c4a3d] font-medium mb-6 text-sm px-2 text-center">You are verified. Use the coupon code below to get 10% off your order.</p>
               
               <div className="w-full bg-[#fdfaf5] border-2 border-dashed border-[#d2c4b3] rounded-[12px] p-6 mb-6 relative">
-                <p className="text-2xl font-bold text-[#8b231a] tracking-[0.2em] text-center select-all">GRIDOX10</p>
+                <p className="text-2xl font-bold text-primary tracking-[0.2em] text-center select-all">GRIDOX10</p>
                 <p className="text-[10px] text-[#8e7f72] absolute bottom-2 right-0 left-0 text-center uppercase tracking-wider font-bold">Tap code to select</p>
               </div>
               
               <button 
                 onClick={() => setIsOpen(false)}
-                className="w-full bg-[#2a1b15] text-white py-4 rounded-[12px] font-bold tracking-wider hover:bg-[#3d271f] hover:scale-[1.05] hover:shadow-xl transition-all duration-300"
+                className="w-full bg-primary text-primary-foreground py-4 rounded-[12px] font-bold tracking-wider hover:opacity-90 hover:scale-[1.05] hover:shadow-xl transition-all duration-300"
               >
                 Start Shopping
               </button>

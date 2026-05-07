@@ -23,7 +23,7 @@ const uploadGenerated = async () => {
     const base64 = `data:image/png;base64,${data.toString('base64')}`;
     
     await Banner.create({
-      title: 'Gridox Official Hero 2026',
+      title: 'GriDox Official Hero 2026',
       imageUrl: base64,
       link: '#'
     });

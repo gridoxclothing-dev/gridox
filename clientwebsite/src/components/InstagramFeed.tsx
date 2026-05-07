@@ -51,11 +51,11 @@ const InstagramFeed: React.FC = () => {
                   <div className="insta-profile-info">
                     <div className="insta-avatar-wrapper">
                       <div className="insta-avatar-gradient">
-                        <div className="insta-avatar-logo">Gridox</div>
+                        <div className="insta-avatar-logo">GriDox</div>
                       </div>
                     </div>
                     <div className="insta-user-meta">
-                      <span className="insta-username">gridox.clothing</span>
+                      <span className="insta-username">GriDox.clothing</span>
                     </div>
                   </div>
                   <MoreHorizontal size={16} className="insta-more-icon" />

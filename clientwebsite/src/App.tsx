@@ -25,8 +25,8 @@ const RefundPolicy = lazy(() => import("./pages/RefundPolicy.tsx"));
 
 // Simple loading fallback
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="w-8 h-8 border-2 border-[#8b231a] border-t-transparent rounded-full animate-spin" />
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
 

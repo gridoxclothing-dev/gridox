@@ -101,14 +101,14 @@ const CuratedLooks: React.FC = () => {
                 const mainCat = Array.isArray(look.category) ? look.category[0] : look.category;
                 navigate(`/category/${mainCat}/product/${look._id}`);
               }}>
-                <img src={look.image} alt={`Gridox Premium Ethnic Wear - ${look.name}`} title={`Gridox Fashion | ${look.name}`} className="look-image" />
+                <img src={look.image} alt={`GriDox Premium Ethnic Wear - ${look.name}`} title={`GriDox Fashion | ${look.name}`} className="look-image" />
                 <button className="look-shop-btn" onClick={(e) => {
                   e.stopPropagation();
                   const mainCat = Array.isArray(look.category) ? look.category[0] : look.category;
                   navigate(`/category/${mainCat}/product/${look._id}`);
                 }}>
                   <ShoppingBag size={14} />
-                  <span>Shop All</span>
+                  <span>Shop Now</span>
                 </button>
               </div>
             </SwiperSlide>
@@ -153,14 +153,14 @@ const CuratedLooks: React.FC = () => {
                 const mainCat = Array.isArray(look.category) ? look.category[0] : look.category;
                 navigate(`/category/${mainCat}/product/${look._id}`);
               }}>
-                <img src={look.image} alt={`Gridox Premium Ethnic Wear - ${look.name}`} title={`Gridox Fashion | ${look.name}`} className="desktop-look-image" />
+                <img src={look.image} alt={`GriDox Premium Ethnic Wear - ${look.name}`} title={`GriDox Fashion | ${look.name}`} className="desktop-look-image" />
                 <button className="desktop-shop-btn" onClick={(e) => {
                   e.stopPropagation();
                   const mainCat = Array.isArray(look.category) ? look.category[0] : look.category;
                   navigate(`/category/${mainCat}/product/${look._id}`);
                 }}>
                   <ShoppingBag size={14} />
-                  <span>Shop All</span>
+                  <span>Shop Now</span>
                 </button>
               </div>
             </SwiperSlide>

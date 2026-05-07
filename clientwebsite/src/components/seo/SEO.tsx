@@ -24,13 +24,13 @@ interface SEOProps {
 }
 
 const siteUrl = "https://gridox.in";
-const siteName = "Gridox";
+const siteName = "GriDox";
 const defaultImage = `/logo.jpeg`;
 
 export const SEO = ({
   title,
   description,
-  keywords = "Gridox, Gridox Fashion, Gridox Clothing, Gridox Women's Wear, Gridox Ethnic Wear, Gridox Designer Collection, Gridox Boutique, Gridox Premium, Gridox Style, Gridox Dress",
+  keywords = "GriDox, GriDox Fashion, GriDox Clothing, GriDox Women's Wear, GriDox Ethnic Wear, GriDox Designer Collection, GriDox Boutique, GriDox Premium, GriDox Style, GriDox Dress",
   image = defaultImage,
   url,
   type = "website",
@@ -90,10 +90,10 @@ export const OrganizationSchema = () => {
   const organizationData = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Gridox",
+    name: "GriDox",
     url: "https://gridox.in",
     logo: "https://gridox.in/logo.jpeg",
-    description: "Gridox - Premium designer women's fashion and clothing. Discover uniquely designed, high-quality dresses, ethnic wear, and contemporary styles by Gridox.",
+    description: "GriDox - Premium designer women's fashion and clothing. Discover uniquely designed, high-quality dresses, ethnic wear, and contemporary styles by GriDox.",
     contactPoint: {
       "@type": "ContactPoint",
       telephone: "+91-11-41169005",
@@ -123,7 +123,7 @@ export const WebSiteSchema = () => {
   const webSiteData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Gridox",
+    name: "GriDox",
     url: "https://gridox.in",
     potentialAction: {
       "@type": "SearchAction",
@@ -176,7 +176,7 @@ export const ProductSchema = ({
     sku: productData.name.toLowerCase().replace(/\s+/g, "-"),
     brand: {
       "@type": "Brand",
-      name: "Gridox",
+      name: "GriDox",
     },
     category: categorySlug,
     offers: {
@@ -187,7 +187,7 @@ export const ProductSchema = ({
       priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       seller: {
         "@type": "Organization",
-        name: "Gridox",
+        name: "GriDox",
       },
     },
     aggregateRating: {
@@ -258,8 +258,8 @@ export const CategorySchema = ({
   const categoryData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${categoryTitle} | Gridox`,
-    description: `Discover the latest ${categoryTitle} collection at Gridox. ${productCount} premium designer pieces.`,
+    name: `${categoryTitle} | GriDox`,
+    description: `Discover the latest ${categoryTitle} collection at GriDox. ${productCount} premium designer pieces.`,
     url: `${siteUrl}/category/${categorySlug}`,
     mainEntity: {
       "@type": "ItemList",

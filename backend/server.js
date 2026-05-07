@@ -195,12 +195,12 @@ app.post('/api/orders', verifyToken, async (req, res) => {
         const resend = new Resend(process.env.RESEND_API_KEY);
         
         await resend.emails.send({
-          from: 'Gridox <no-reply@gridox.in>',
+          from: 'GriDox <no-reply@gridox.in>',
           to: [userEmail, 'igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to customer and both admins
-          subject: `Order Confirmation - Gridox Fashion`,
+          subject: `Order Confirmation - GriDox Fashion`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-              <h2 style="color: #000; text-align: center;">Gridox Order Confirmed</h2>
+              <h2 style="color: #000; text-align: center;">GriDox Order Confirmed</h2>
               <p>Thank you for your order!</p>
               <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
                 <h3 style="margin-top: 0;">Delivery Details:</h3>
@@ -608,12 +608,12 @@ app.post('/api/send-otp', async (req, res) => {
         
         // Fire and forget email to avoid UI lag
         resend.emails.send({
-          from: 'Gridox <no-reply@gridox.in>',
+          from: 'GriDox <no-reply@gridox.in>',
           to: email,
-          subject: "Your Gridox Verification Code",
+          subject: "Your GriDox Verification Code",
           text: `Use this code to verify your account and get 10% off: ${otp}`,
           html: `<div style="font-family: sans-serif; padding: 20px;">
-                  <h2 style="color: #000;">Gridox</h2>
+                  <h2 style="color: #000;">GriDox</h2>
                   <p>Thanks for joining! Use the code below to verify your account:</p>
                   <h1 style="letter-spacing: 5px; color: #000; background: #f4f4f4; padding: 10px; display: inline-block; border-radius: 5px;">${otp}</h1>
                   <p>Get ready for exclusive fashion drops.</p>
@@ -669,7 +669,7 @@ app.post('/api/leads', async (req, res) => {
 
       // Fire and forget lead notification to avoid UI lag
       transporter.sendMail({
-        from: `"Gridox Notification" <${smtpUser}>`,
+        from: `"GriDox Notification" <${smtpUser}>`,
         to: ['igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to both admin emails
         subject: "🎉 New Verified Lead Captured",
         html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; max-width: 500px;">
@@ -713,7 +713,7 @@ app.delete('/api/leads/:id', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.status(200).json({ status: 'API Online', service: 'Gridox Engine' });
+  res.status(200).json({ status: 'API Online', service: 'GriDox Engine' });
 });
 
 app.listen(process.env.PORT || 3001, '0.0.0.0', () => {

@@ -48,12 +48,12 @@ const sendOTPEmail = async (email, otp) => {
   try {
     console.log(`[AUTH] Dispatching OTP email to ${email} via Resend...`);
     const { data, error } = await resend.emails.send({
-      from: 'Gridox <no-reply@gridox.in>', // Using your verified domain
+      from: 'GriDox <no-reply@gridox.in>', // Using your verified domain
       to: email,
-      subject: 'Gridox - Your Verification Code',
+      subject: 'GriDox - Your Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 500px; margin: auto;">
-          <h2 style="color: #000; text-align: center;">Gridox Verification</h2>
+          <h2 style="color: #000; text-align: center;">GriDox Verification</h2>
           <p>Hello,</p>
           <p>Your verification code is:</p>
           <div style="font-size: 32px; font-weight: bold; text-align: center; padding: 10px; background: #f9f9f9; border-radius: 5px; color: #000; letter-spacing: 5px;">
@@ -64,7 +64,7 @@ const sendOTPEmail = async (email, otp) => {
           </p>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="font-size: 12px; color: #999; text-align: center;">
-            Sent by Gridox Premium Fashion
+            Sent by GriDox Premium Fashion
           </p>
         </div>
       `

@@ -5,7 +5,7 @@ const AboutUs = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <section id="about" className="relative w-full py-12 md:py-16 bg-[#1a1a1a] text-white overflow-hidden border-t border-b border-white/10">
+    <section id="about" className="relative w-full py-12 md:py-16 bg-[#000000] text-white overflow-hidden border-t border-b border-white/10">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex flex-col items-center text-center space-y-8">
@@ -16,10 +16,10 @@ const AboutUs = () => {
                 Our Story
               </div>
               <h2 className="font-heading text-3xl md:text-4xl text-white leading-tight tracking-tight">
-                About Gridox | Premium Designer Women's Fashion
+                About GriDox | Premium Designer Women's Fashion
               </h2>
               <p className="text-white/70 font-body text-sm md:text-base leading-relaxed max-w-xl mx-auto">
-                Gridox is a leading destination for designer women's clothing, specializing in premium ethnic wear and modern contemporary styles. 
+                GriDox is a leading destination for designer women's clothing, specializing in premium ethnic wear and modern contemporary styles. 
                 With our own dedicated production unit, we bridge the gap between high-end couture and everyday elegance, ensuring every piece is tailored to perfection for the modern woman.
               </p>
             </div>
@@ -33,7 +33,7 @@ const AboutUs = () => {
                 { icon: Factory, text: "In-House Production",desc: "End-to-end quality control" },
               ].map((item, idx) => (
                 <div key={idx} className="flex flex-col items-center text-center space-y-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5">
-                  <div className="w-10 h-10 rounded-full bg-[#E6C9B5] flex items-center justify-center text-[#1a1a1a] transition-transform duration-300 hover:scale-110">
+                  <div className="w-10 h-10 rounded-full bg-[#E6C9B5] flex items-center justify-center text-[#000000] transition-transform duration-300 hover:scale-110">
                     <item.icon className="w-5 h-5" strokeWidth={1.5} />
                   </div>
                   <div>
@@ -51,7 +51,7 @@ const AboutUs = () => {
                 className="group flex items-center gap-2 text-white font-semibold tracking-widest text-xs uppercase transition-all hover:text-white/80"
               >
                 {isExpanded ? "READ LESS" : "READ OUR MANIFESTO"}
-                <div className={`p-1.5 rounded-full transition-all duration-300 ${isExpanded ? "bg-white/10" : "bg-white text-[#1a1a1a] group-hover:translate-x-1"}`}>
+                <div className={`p-1.5 rounded-full transition-all duration-300 ${isExpanded ? "bg-white/10" : "bg-white text-[#000000] group-hover:translate-x-1"}`}>
                   {isExpanded ? <ChevronUp size={14} /> : <ArrowRight size={14} />}
                 </div>
               </button>
@@ -59,7 +59,7 @@ const AboutUs = () => {
               <div className={`w-full overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? "max-h-[800px] opacity-100 pb-6" : "max-h-0 opacity-0"}`}>
                 <div className="text-white/70 space-y-4 text-sm leading-relaxed max-w-2xl mx-auto text-left md:text-center px-4">
                   <p>
-                    Gridox is inspired by modern women across Coimbatore, Tirupur, and all of Tamil Nadu who balance multiple roles effortlessly. That's why our collections are designed to be versatile, timeless, and easy to wear, especially suited for the local climate.
+                    GriDox is inspired by modern women across Coimbatore, Tirupur, and all of Tamil Nadu who balance multiple roles effortlessly. That's why our collections are designed to be versatile, timeless, and easy to wear, especially suited for the local climate.
                   </p>
                   <p>
                     Unlike mass-produced fashion, we focus on limited, carefully crafted pieces—ensuring uniqueness in every outfit you own. Our designs are built to last beyond seasons, providing the perfect blend of tradition and comfort for the fashion-forward women of South India.
@@ -67,7 +67,7 @@ const AboutUs = () => {
                   <div className="pt-4">
                     <p className="text-white text-base md:text-lg font-heading italic font-medium relative inline-block px-8">
                       <span className="absolute left-0 top-0 text-2xl opacity-20">"</span>
-                      Gridox isn't just what you wear. It's how you feel wearing it.
+                      GriDox isn't just what you wear. It's how you feel wearing it.
                       <span className="absolute right-0 bottom-0 text-2xl opacity-20">"</span>
                     </p>
                   </div>

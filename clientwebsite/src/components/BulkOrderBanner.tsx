@@ -7,7 +7,7 @@ const BulkOrderBanner: React.FC = () => {
       <div className="bulk-banner-overlay">
         <div className="bulk-banner-content">
           <div className="bulk-banner-left">
-            <h2>GRIDOX BULK ORDERS</h2>
+            <h2>GriDox BULK ORDERS</h2>
           </div>
           <div className="bulk-banner-center">
             <h3>PERFECT FOR EVENTS</h3>

@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 const mailOptions = {
   from: process.env.SMTP_EMAIL,
   to: process.env.SMTP_EMAIL,
-  subject: "Test Email from Gridox Script",
+  subject: "Test Email from GriDox Script",
   text: "If you receive this, your SMTP settings are perfectly working!"
 };
 

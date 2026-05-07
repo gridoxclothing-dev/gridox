@@ -149,7 +149,7 @@ const CheckoutPage = () => {
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <ShoppingBag size={48} className="text-muted-foreground mb-4" />
           <h2 className="text-xl font-medium mb-4">Your cart is empty</h2>
-          <button onClick={() => navigate('/')} className="px-6 py-2 bg-black text-white text-sm tracking-wider">
+          <button onClick={() => navigate('/')} className="px-6 py-2 bg-primary text-primary-foreground text-sm tracking-wider hover:opacity-90 transition-all rounded-sm">
             CONTINUE SHOPPING
           </button>
         </div>
@@ -182,10 +182,10 @@ const CheckoutPage = () => {
               
               {/* Step 2: Address */}
               <div className="flex items-center">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? (step > 2 ? 'bg-[#1e293b] text-white' : 'bg-black text-white') : 'bg-gray-200 text-gray-500'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? (step > 2 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground') : 'bg-muted text-muted-foreground'}`}>
                   {step > 2 ? <Check size={14} /> : '2'}
                 </div>
-                <span className={`ml-2 text-xs uppercase tracking-wide ${step >= 2 ? 'font-medium text-black' : 'text-gray-500'}`}>Address</span>
+                <span className={`ml-2 text-xs uppercase tracking-wide ${step >= 2 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>Address</span>
               </div>
 
               <div className="w-8 md:w-16 h-px bg-gray-300 mx-2 md:mx-4"></div>
@@ -195,7 +195,7 @@ const CheckoutPage = () => {
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 3 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
                   3
                 </div>
-                <span className={`ml-2 text-xs uppercase tracking-wide ${step === 3 ? 'font-medium text-black' : 'text-gray-500'}`}>Payment</span>
+                <span className={`ml-2 text-xs uppercase tracking-wide ${step === 3 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>Payment</span>
               </div>
             </div>
 
@@ -213,12 +213,12 @@ const CheckoutPage = () => {
             </div>
             <h1 className="text-3xl font-serif mb-2">Order Confirmed!</h1>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Thank you for shopping with Gridox. Your order has been placed successfully and will be delivered soon.
+              Thank you for shopping with GriDox. Your order has been placed successfully and will be delivered soon.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <button 
                 onClick={() => navigate('/my-orders')}
-                className="px-8 py-3 bg-black text-white text-sm font-medium tracking-wider w-full sm:w-auto hover:bg-gray-800 transition-colors"
+                className="px-8 py-3 bg-primary text-primary-foreground text-sm font-medium tracking-wider w-full sm:w-auto hover:opacity-90 transition-all"
               >
                 VIEW MY ORDERS
               </button>
@@ -290,7 +290,7 @@ const CheckoutPage = () => {
                     <div className="pt-4">
                       <button 
                         type="submit"
-                        className="px-8 py-3 bg-[#001325] text-white font-medium text-sm tracking-wider hover:bg-gray-800 transition-colors"
+                        className="px-8 py-3 bg-primary text-primary-foreground font-medium text-sm tracking-wider hover:opacity-90 transition-all rounded-sm"
                       >
                         DELIVER HERE
                       </button>
@@ -322,7 +322,7 @@ const CheckoutPage = () => {
                       <div className="w-4 h-4 rounded-full bg-[#001325] mr-3 flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-background"></div>
                       </div>
-                      <span className="font-medium text-[#001325]">Cash on Delivery (COD)</span>
+                      <span className="font-medium text-foreground">Cash on Delivery (COD)</span>
                     </div>
                     <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">AVAILABLE</span>
                   </div>
@@ -331,7 +331,7 @@ const CheckoutPage = () => {
                     <button 
                       onClick={placeOrder}
                       disabled={isPlacingOrder}
-                      className="w-full py-4 bg-[#001325] text-white font-medium tracking-wider hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      className="w-full py-4 bg-primary text-primary-foreground font-medium tracking-wider hover:opacity-90 transition-all disabled:opacity-50"
                     >
                       {isPlacingOrder ? 'PLACING ORDER...' : `PLACE ORDER • ₹${finalTotal.toLocaleString()}`}
                     </button>
@@ -372,7 +372,7 @@ const CheckoutPage = () => {
                     />
                     <button 
                       onClick={handleApplyPromo}
-                      className="px-4 py-2 bg-black text-white text-xs font-medium tracking-wider hover:bg-gray-800 transition-colors"
+                      className="px-4 py-2 bg-primary text-primary-foreground text-xs font-medium tracking-wider hover:opacity-90 transition-all"
                     >
                       APPLY
                     </button>

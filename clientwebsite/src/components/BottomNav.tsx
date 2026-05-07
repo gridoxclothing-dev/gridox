@@ -26,7 +26,7 @@ const BottomNav = () => {
                 if (item.path) navigate(item.path);
                 if (item.onClick) item.onClick();
               }}
-              className="flex flex-col items-center gap-1.5 text-gray-500 hover:text-[#8b231a] active:scale-90 transition-all bg-transparent border-none cursor-pointer flex-1"
+              className="flex flex-col items-center gap-1.5 text-foreground hover:text-primary active:scale-90 transition-all bg-transparent border-none cursor-pointer flex-1"
             >
               <item.icon size={20} strokeWidth={1.5} />
               <span className="text-[9px] font-bold tracking-widest">{item.label}</span>

@@ -6,49 +6,49 @@ const reviews = [
     id: 1,
     name: "Sneha",
     image: "/reviews/review7.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 2,
     name: "Ritika",
     image: "/reviews/revire2.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 3,
     name: "Nisha",
     image: "/reviews/review1.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 4,
     name: "Nisha",
     image: "/reviews/review5.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 4,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 5,
     name: "Anjali",
     image: "/reviews/review4.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 6,
     name: "Vidhya",
     image: "/reviews/review3.avif",
-    text: "Gridox Verified\nReview",
+    text: "GriDox Verified\nReview",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 7,
@@ -56,7 +56,7 @@ const reviews = [
     image: "/reviews/review6.avif",
     text: "Received my Peplum set within 24 hours. Perfect fit!",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   },
   {
     id: 8,
@@ -64,7 +64,7 @@ const reviews = [
     image: "/reviews/revire8.avif",
     text: "The raw silk quality is amazing. Best festive wear collection.",
     rating: 5,
-    tag: "Gridox!"
+    tag: "GriDox!"
   }
 ];
 
@@ -83,7 +83,7 @@ const CustomerReviews = () => {
     <section className="py-20 bg-background overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="text-center space-y-8 mb-16">
-          <h2 className="font-heading text-3xl md:text-4xl text-[#1a1a1a] font-normal tracking-tight">
+          <h2 className="font-heading text-3xl md:text-4xl text-[#000000] font-normal tracking-tight">
             Loved by 4 Lakh+ Women
           </h2>
 
@@ -159,7 +159,7 @@ const CustomerReviews = () => {
                     ))}
                   </div>
 
-                  <p className="text-sm font-bold text-[#1a1a1a] tracking-wide">{review.name}</p>
+                  <p className="text-sm font-bold text-[#000000] tracking-wide">{review.name}</p>
 
                   <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em]">{review.tag}</p>
                 </div>

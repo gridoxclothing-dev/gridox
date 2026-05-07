@@ -25,7 +25,7 @@ const CartPage = () => {
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('gridox_cart');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { }
+      try { return JSON.parse(saved); } catch (e) { console.error("Failed to parse cart:", e); }
     }
     return [];
   });
@@ -60,7 +60,7 @@ const CartPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0">
+    <div className="min-h-screen bg-background text-foreground pb-16 md:pb-0">
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="font-heading text-2xl md:text-3xl font-bold tracking-wide mb-6">Your Cart</h1>
@@ -127,7 +127,7 @@ const CartPage = () => {
               </div>
               <button
                 onClick={handleCheckoutClick}
-                className="w-full py-3 bg-black text-white text-sm font-medium tracking-wider hover:opacity-80 transition-opacity"
+                className="w-full py-3 bg-primary text-primary-foreground text-sm font-medium tracking-wider hover:opacity-90 transition-opacity rounded-sm"
               >
                 PROCEED TO CHECKOUT
               </button>

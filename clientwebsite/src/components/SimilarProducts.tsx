@@ -52,7 +52,7 @@ const SimilarProducts = ({ products, currentProductId, categorySlug }: SimilarPr
                   {product.name}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#1a1a1a]">₹{product.price.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-[#000000]">₹{product.price.toLocaleString()}</span>
                   {product.originalPrice && (
                     <span className="text-xs text-gray-400 line-through">
                       ₹{product.originalPrice.toLocaleString()}

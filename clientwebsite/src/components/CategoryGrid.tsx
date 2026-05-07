@@ -20,7 +20,7 @@ const CategoryGrid: React.FC = () => {
   useEffect(() => {
     const updateLimit = () => {
       if (window.innerWidth <= 768) {
-        setLimit(9); // 3 columns * 3 rows = 9 items
+        setLimit(6); // 3 columns * 2 rows = 6 items
       } else {
         setLimit(8); // 4 columns * 2 rows = 8 items
       }

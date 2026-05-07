@@ -39,10 +39,10 @@ const CategoryPage = () => {
   const categoryName = slug?.replace(/-/g, ' ').toUpperCase();
 
   return (
-    <div className="min-h-screen bg-background text-[#1a1a1a] pb-16 md:pb-0 font-body">
+    <div className="min-h-screen bg-background text-[#000000] pb-16 md:pb-0 font-body">
       <Helmet>
-        <title>{`${categoryName} | Women's Fashion | Gridox`}</title>
-        <meta name="description" content={`Discover the latest ${categoryName} collection at Gridox. Shop high-quality designer wear.`} />
+        <title>{`${categoryName} | Women's Fashion | GriDox`}</title>
+        <meta name="description" content={`Discover the latest ${categoryName} collection at GriDox. Shop high-quality designer wear.`} />
       </Helmet>
 
       <Header />
@@ -61,7 +61,7 @@ const CategoryPage = () => {
 
       {/* Title */}
       <div className="max-w-7xl mx-auto px-4 pb-8">
-        <h1 className="font-heading text-3xl md:text-4xl font-normal tracking-tight text-[#1a1a1a] italic">{categoryName}</h1>
+        <h1 className="font-heading text-3xl md:text-4xl font-normal tracking-tight text-[#000000] italic">{categoryName}</h1>
         <p className="text-gray-500 text-xs tracking-wider uppercase mt-2 font-medium">
           {isLoading ? "Fetching designs..." : `${products.length} Designs Found`}
         </p>
@@ -87,7 +87,7 @@ const CategoryPage = () => {
                     className="w-full aspect-[3/4] object-cover object-top transition-transform duration-700 group-hover:scale-110"
                   />
                   {product.discount && (
-                    <div className="absolute top-0 left-0 bg-[#1a1a1a] text-white text-[9px] font-bold px-3 py-1.5 tracking-widest uppercase">
+                    <div className="absolute top-0 left-0 bg-[#000000] text-white text-[9px] font-bold px-3 py-1.5 tracking-widest uppercase">
                       {product.discount}
                     </div>
                   )}
@@ -96,11 +96,11 @@ const CategoryPage = () => {
                   </button>
                 </div>
                 <div className="mt-5 space-y-2 text-center md:text-left">
-                  <h3 className="text-sm font-medium text-[#1a1a1a] leading-relaxed line-clamp-1">
+                  <h3 className="text-sm font-medium text-[#000000] leading-relaxed line-clamp-1">
                     {product.name}
                   </h3>
                   <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                    <span className="text-base font-bold text-[#1a1a1a]">₹{product.price.toLocaleString()}</span>
+                    <span className="text-base font-bold text-[#000000]">₹{product.price.toLocaleString()}</span>
                     {product.originalPrice && (
                       <span className="text-xs text-gray-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
                     )}

@@ -7,9 +7,9 @@ const CoimbatoreStyleGuide = () => {
   return (
     <div className="min-h-screen bg-white text-[#1a1a1a] pb-16 md:pb-0">
       <Helmet>
-        <title>Coimbatore Style Guide: Summer Fashion Tips | Gridox</title>
+        <title>Coimbatore Style Guide: Summer Fashion Tips | GriDox</title>
         <meta name="description" content="Master Coimbatore's fashion scene with our ultimate style guide. Discover breathable cotton kurtis and elegant peplum sets perfect for the Tamil Nadu climate." />
-        <meta name="keywords" content="Coimbatore fashion, Tirupur style, Tamil Nadu summer wear, cotton kurtis Coimbatore, Gridox style guide" />
+        <meta name="keywords" content="Coimbatore fashion, Tirupur style, Tamil Nadu summer wear, cotton kurtis Coimbatore, GriDox style guide" />
       </Helmet>
 
       <Header />
@@ -33,7 +33,7 @@ const CoimbatoreStyleGuide = () => {
                 Coimbatore, often celebrated as the 'Manchester of South India', isn't just a textile hub—it's a city where heritage meets a rapidly evolving modern lifestyle. For the modern woman in Coimbatore, fashion is a delicate balance: it must be sophisticated enough for the corporate world in Tidel Park, yet breathable enough for a humid afternoon walk in Race Course.
               </p>
               <p className="mt-4">
-                At Gridox, we understand that fashion here isn't just about following global trends; it's about respecting the deep textile roots of the region while embracing contemporary silhouettes that fit a busy, multi-faceted life.
+                At GriDox, we understand that fashion here isn't just about following global trends; it's about respecting the deep textile roots of the region while embracing contemporary silhouettes that fit a busy, multi-faceted life.
               </p>
             </section>
 
@@ -65,9 +65,9 @@ const CoimbatoreStyleGuide = () => {
             </section>
 
             <section>
-              <h2 className="font-heading text-2xl md:text-3xl text-black italic mb-6">Conclusion: Your Style, Tailored by Gridox</h2>
+              <h2 className="font-heading text-2xl md:text-3xl text-black italic mb-6">Conclusion: Your Style, Tailored by GriDox</h2>
               <p>
-                Fashion in Coimbatore is about quality, comfort, and a touch of designer flair. At Gridox, with our in-house production unit, we ensure that every piece is crafted to meet these local standards.
+                Fashion in Coimbatore is about quality, comfort, and a touch of designer flair. At GriDox, with our in-house production unit, we ensure that every piece is crafted to meet these local standards.
               </p>
               <p className="mt-4 font-bold text-[#8b231a]">
                 Visit our store locator to find our nearest outlet or shop our exclusive Coimbatore collection online with same-day dispatch.

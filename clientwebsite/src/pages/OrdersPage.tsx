@@ -88,16 +88,16 @@ const OrdersPage = () => {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="p-4 md:px-6 flex flex-col md:flex-row gap-3 border-b border-gray-50">
+        <div className="p-4 md:px-6 flex flex-col md:flex-row gap-3 border-b border-border/10 bg-background/50">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <input
               type="text"
               placeholder="Search your orders..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/60 font-body"
             />
           </div>
-          <button className="flex items-center justify-center px-6 py-2.5 bg-white border border-gray-200 rounded-xl gap-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+          <button className="flex items-center justify-center px-6 py-2.5 bg-card border border-border/30 rounded-xl gap-2 text-sm font-bold text-foreground/80 hover:bg-background hover:text-primary transition-all shadow-sm">
             <SlidersHorizontal size={16} /> Filters
           </button>
         </div>

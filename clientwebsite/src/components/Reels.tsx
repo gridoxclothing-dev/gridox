@@ -167,7 +167,7 @@ const Reels: React.FC = () => {
 
   return (
     <section className="reels-container">
-      <h2 className="reels-title text-[#1a1a1a]">Feel the Reel</h2>
+      <h2 className="reels-title text-foreground">Feel the Reel</h2>
       <div className="title-underline mb-12"></div>
       
       <div className="reels-slider-wrapper">
@@ -196,7 +196,7 @@ const Reels: React.FC = () => {
           onClick={() => scrollSlider("right")}
           aria-label="Next reels"
         >
-          <ChevronRight size={24} color="#1a1a1a" />
+          <ChevronRight size={24} className="text-foreground" />
         </button>
       </div>
 
@@ -275,10 +275,10 @@ const ReelItem: React.FC<{
           src={videoSrc}
         />
       ) : (
-        <div className="reel-video-preview bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+        <div className="reel-video-preview bg-muted flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-full border-2 border-slate-300 border-t-slate-500 animate-spin"></div>
-                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Loading</span>
+                <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Loading</span>
             </div>
         </div>
       )}

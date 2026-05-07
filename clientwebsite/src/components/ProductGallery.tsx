@@ -106,8 +106,8 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
             >
               <img
                 src={img}
-                alt={`Gridox Premium Ethnic Wear - ${productName} view ${index + 1}`}
-                title={`Gridox Fashion | ${productName}`}
+                alt={`GriDox Premium Ethnic Wear - ${productName} view ${index + 1}`}
+                title={`GriDox Fashion | ${productName}`}
                 className="w-full h-full object-cover object-top"
                 loading="lazy"
               />
@@ -144,8 +144,8 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
               <img
                 key={index}
                 src={img}
-                alt={`Gridox Premium Ethnic Wear - ${productName} ${index === 0 ? "Front" : index === 1 ? "Side" : index === 2 ? "Back" : index === 3 ? "Walking" : "Detail"}`}
-                title={`Gridox Fashion | ${productName} ${index === 0 ? "Front View" : index === 1 ? "Side View" : index === 2 ? "Back View" : "Detail"}`}
+                alt={`GriDox Premium Ethnic Wear - ${productName} ${index === 0 ? "Front" : index === 1 ? "Side" : index === 2 ? "Back" : index === 3 ? "Walking" : "Detail"}`}
+                title={`GriDox Fashion | ${productName} ${index === 0 ? "Front View" : index === 1 ? "Side View" : index === 2 ? "Back View" : "Detail"}`}
                 className={`absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500 ${
                   activeIndex === index ? "opacity-100" : "opacity-0"
                 }`}
@@ -216,8 +216,8 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
             >
               <img
                 src={img}
-                alt={`Gridox Premium Ethnic Wear - ${productName} thumbnail ${index + 1}`}
-                title={`Gridox Fashion | ${productName}`}
+                alt={`GriDox Premium Ethnic Wear - ${productName} thumbnail ${index + 1}`}
+                title={`GriDox Fashion | ${productName}`}
                 className="w-full h-full object-cover object-top"
                 loading="lazy"
               />

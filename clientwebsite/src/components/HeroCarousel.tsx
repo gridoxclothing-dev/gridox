@@ -172,8 +172,8 @@ const HeroCarousel = () => {
             >
               <OptimizedImage
                 src={shouldLoad ? (isMobile ? slide.mobileImageUrl! : slide.imageUrl!) : ""}
-                alt={`Gridox Premium Fashion - ${slide.title || "Latest Collection"}`}
-                title={`Gridox Fashion | ${slide.title || "Exclusive Styles"}`}
+                alt={`GriDox Premium Fashion - ${slide.title || "Latest Collection"}`}
+                title={`GriDox Fashion | ${slide.title || "Exclusive Styles"}`}
                 priority={i === 0}
                 isBanner={true}
                 className={`w-full ${isMobile ? "h-full object-cover" : "h-auto object-contain"} ${

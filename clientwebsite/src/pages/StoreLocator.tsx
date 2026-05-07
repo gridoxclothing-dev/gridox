@@ -3,7 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { MapPin, Phone, Mail, Clock, Navigation, Star, Sparkles, Shirt } from "lucide-react";
 
-// Colors: Mahogany (#8b231a), Ivory (#fcfaf7), Charcoal (#1a1a1a)
+// Colors: Mahogany (#8b231a), Ivory (#fcfaf7), Charcoal (#000000)
 
 const StoreLocator = () => {
   const address = "Sakthi Theatre Rd, Shrinagar, Pitchampalayam Pudur, Tiruppur, Chettipalayam, Tamil Nadu 641603";
@@ -14,11 +14,11 @@ const StoreLocator = () => {
       <Header />
 
       {/* Hero Section - Sleeker and more minimalist */}
-      <section className="relative h-[30vh] md:h-[50vh] flex items-center justify-center overflow-hidden bg-[#1a1a1a]">
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/40 to-[#1a1a1a] z-10" />
+      <section className="relative h-[30vh] md:h-[50vh] flex items-center justify-center overflow-hidden bg-[#000000]">
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/40 to-[#000000] z-10" />
         <img
           src="/store_locator_hero_1775658520224.png"
-          alt="Gridox Store Interior"
+          alt="GriDox Store Interior"
           className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale-[0.3]"
           onError={(e) => {
             e.currentTarget.src = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2000";
@@ -43,7 +43,7 @@ const StoreLocator = () => {
             <div className="lg:col-span-5 space-y-12 md:space-y-16 w-full">
               <div className="space-y-6 md:space-y-8">
                 <div className="space-y-3 md:space-y-4">
-                  <h2 className="font-heading text-3xl md:text-4xl text-[#1a1a1a] leading-tight">
+                  <h2 className="font-heading text-3xl md:text-4xl text-[#000000] leading-tight">
                     Our Flagship Boutique in <span className="text-[#8b231a] italic">Tiruppur</span>
                   </h2>
                   <p className="text-gray-500 text-base md:text-lg leading-relaxed max-w-md">
@@ -60,7 +60,7 @@ const StoreLocator = () => {
                     </div>
                     <div className="space-y-1 md:space-y-2">
                       <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Address</p>
-                      <p className="text-[#1a1a1a] font-medium leading-relaxed italic text-sm md:text-base">
+                      <p className="text-[#000000] font-medium leading-relaxed italic text-sm md:text-base">
                         {address}
                       </p>
                     </div>
@@ -74,7 +74,7 @@ const StoreLocator = () => {
                       </div>
                       <div className="space-y-1">
                         <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Call</p>
-                        <a href="tel:+918110911118" className="text-[#1a1a1a] text-sm md:text-base font-semibold hover:text-[#8b231a] transition-colors">+91 81109 11118</a>
+                        <a href="tel:+918110911118" className="text-[#000000] text-sm md:text-base font-semibold hover:text-[#8b231a] transition-colors">+91 81109 11118</a>
                       </div>
                     </div>
                     <div className="group flex gap-4 md:gap-6">
@@ -83,7 +83,7 @@ const StoreLocator = () => {
                       </div>
                       <div className="space-y-1">
                         <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Email</p>
-                        <a href="mailto:gridoxclothing@gmail.com" className="text-[#1a1a1a] text-sm md:text-base font-semibold hover:text-[#8b231a] transition-colors">gridoxclothing@gmail.com</a>
+                        <a href="mailto:gridoxclothing@gmail.com" className="text-[#000000] text-sm md:text-base font-semibold hover:text-[#8b231a] transition-colors">gridoxclothing@gmail.com</a>
                       </div>
                     </div>
                   </div>
@@ -92,12 +92,12 @@ const StoreLocator = () => {
                   <div className="p-6 md:p-8 bg-background border border-[#8b231a]/5 shadow-sm space-y-4 md:space-y-6">
                     <div className="flex items-center gap-3">
                       <Clock size={16} className="text-[#8b231a]" />
-                      <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1a1a1a]">Boutique Hours</p>
+                      <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#000000]">Boutique Hours</p>
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm border-b border-gray-50 pb-2">
                         <span className="text-gray-500">Mon - Sat</span>
-                        <span className="text-[#1a1a1a] font-medium uppercase tracking-tight">10:00 - 21:00</span>
+                        <span className="text-[#000000] font-medium uppercase tracking-tight">10:00 - 21:00</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Sunday</span>
@@ -112,7 +112,7 @@ const StoreLocator = () => {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex justify-center w-full md:inline-flex md:w-auto items-center gap-4 bg-[#8b231a] text-white px-8 md:px-10 py-4 md:py-5 text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-[#1a1a1a] transition-all group shadow-sm"
+                    className="flex justify-center w-full md:inline-flex md:w-auto items-center gap-4 bg-[#8b231a] text-white px-8 md:px-10 py-4 md:py-5 text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-[#000000] transition-all group shadow-sm"
                   >
                     Get Directions
                     <Navigation size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

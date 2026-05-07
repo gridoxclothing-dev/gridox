@@ -8,7 +8,7 @@ const announcements = [
 
 const AnnouncementBar = () => {
   return (
-    <div className="bg-[#1a1a1a] text-white overflow-hidden py-0.5 text-[9px] md:text-[11px] tracking-widest uppercase font-medium">
+    <div className="bg-announcement text-announcement-foreground overflow-hidden py-0.5 text-[9px] md:text-[11px] tracking-widest uppercase font-medium">
       <div className="flex animate-[marquee_15s_linear_infinite] whitespace-nowrap items-center">
         {[...announcements, ...announcements, ...announcements].map((text, i) => (
           <div key={i} className="flex items-center">

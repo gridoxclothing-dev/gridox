@@ -114,11 +114,11 @@ const Header = () => {
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           <img 
             src="/logo.jpeg" 
-            alt="Gridox Logo" 
+            alt="GriDox Logo" 
             className="h-8 md:h-10 w-auto object-contain"
           />
           <h1 className="font-heading text-xl md:text-2xl font-bold tracking-tight text-foreground m-0">
-            Gridox
+            GriDox
           </h1>
         </div>
 
@@ -150,7 +150,7 @@ const Header = () => {
               <button
                 aria-label="Profile Menu"
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-8 h-8 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-[#8b231a] font-bold hover:bg-rose-100 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center text-primary font-bold hover:bg-accent/80 transition-colors cursor-pointer"
               >
                 {userData.name.charAt(0).toUpperCase()}
               </button>
@@ -201,7 +201,7 @@ const Header = () => {
           <button aria-label="Cart" onClick={() => navigate("/cart")} className="text-foreground hover:text-accent transition-colors relative bg-transparent border-none cursor-pointer"> {/* fix: cart route */}
             <ShoppingCart size={20} />
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#8b231a] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
@@ -220,29 +220,29 @@ const Header = () => {
           />
           
           {/* Drawer Panel */}
-          <div className="relative w-[85%] max-w-[340px] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 overflow-y-auto">
+          <div className="relative w-[85%] max-w-[340px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 overflow-y-auto">
             
             {/* Close Button Inside Drawer */}
             <button 
-              className="absolute top-3 right-3 p-2 bg-gray-100 rounded-full z-10 border-none cursor-pointer"
+              className="absolute top-3 right-3 p-2 bg-muted rounded-full z-10 border-none cursor-pointer"
               onClick={() => setMenuOpen(false)}
             >
-              <X size={20} className="text-gray-800" />
+              <X size={20} className="text-foreground" />
             </button>
 
             {/* Top Promotional Banner */}
             <div 
-              className="bg-[#eedfcb] p-5 flex items-center justify-between cursor-pointer border-b border-[#d2c4b3]" 
+              className="bg-secondary p-5 flex items-center justify-between cursor-pointer border-b border-border" 
               onClick={() => { 
                 setMenuOpen(false); 
                 window.dispatchEvent(new CustomEvent('openPromoModal', { detail: { src: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=60' } })); 
               }}
             >
               <div>
-                <span className="inline-block bg-[#8b231a] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-sm mb-1.5 tracking-wider shadow-sm">10% OFF</span>
-                <h3 className="text-[#2a1b15] font-black text-lg leading-none tracking-tight">FLAT 10% OFF</h3>
-                <p className="text-[11px] text-[#5c4a3d] mt-1 font-bold tracking-wide">ON YOUR 1ST ORDER</p>
-                <p className="text-[10px] font-bold text-[#8b231a] mt-2 tracking-wider flex items-center">
+                <span className="inline-block bg-primary text-primary-foreground text-[10px] font-extrabold px-2 py-0.5 rounded-sm mb-1.5 tracking-wider shadow-sm">10% OFF</span>
+                <h3 className="text-foreground font-black text-lg leading-none tracking-tight">FLAT 10% OFF</h3>
+                <p className="text-[11px] text-muted-foreground mt-1 font-bold tracking-wide">ON YOUR 1ST ORDER</p>
+                <p className="text-[10px] font-bold text-primary mt-2 tracking-wider flex items-center">
                   SIGN UP. LOGIN <ChevronRight size={12} className="ml-0.5" />
                 </p>
               </div>
@@ -259,10 +259,10 @@ const Header = () => {
                 <button 
                   key={name}
                   onClick={() => { handleNavClick(name, navigate); setMenuOpen(false); }}
-                  className="w-full flex items-center justify-between px-6 py-4 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-between px-6 py-4 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted transition-colors"
                 >
-                  <span className="font-bold text-gray-900 text-[15px] tracking-wide capitalize">{name.toLowerCase()}</span>
-                  <ChevronRight size={18} className="text-gray-400" />
+                  <span className="font-bold text-foreground text-[15px] tracking-wide capitalize">{name.toLowerCase()}</span>
+                  <ChevronRight size={18} className="text-muted-foreground" />
                 </button>
               ))}
             </div>
@@ -279,9 +279,9 @@ const Header = () => {
                 } else {
                   document.getElementById('best-sellers')?.scrollIntoView({ behavior: "smooth" });
                 }
-              }} className="w-full flex items-center px-6 py-3.5 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 text-left">
-                <span className="text-gray-600 text-[14px] font-medium tracking-wide">Best Sellers</span>
-                <span className="ml-3 text-[9px] text-[#8b2b25] font-bold border border-[#8b2b25] px-1.5 py-0.5 rounded-sm bg-[#ebd2be]">NEW</span>
+              }} className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left">
+                <span className="text-muted-foreground text-[14px] font-medium tracking-wide">Best Sellers</span>
+                <span className="ml-3 text-[9px] text-primary-foreground font-bold border border-primary px-1.5 py-0.5 rounded-sm bg-primary">NEW</span>
               </button>
               <button onClick={() => {
                 setMenuOpen(false);
@@ -291,9 +291,9 @@ const Header = () => {
                 } else {
                   document.getElementById('curated-looks')?.scrollIntoView({ behavior: "smooth" });
                 }
-              }} className="w-full flex items-center px-6 py-3.5 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 text-left">
-                <span className="text-gray-600 text-[14px] font-medium tracking-wide">Trending</span>
-                <span className="ml-3 text-[9px] text-[#8b2b25] font-bold border border-[#8b2b25] px-1.5 py-0.5 rounded-sm bg-[#ebd2be]">NEW</span>
+              }} className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left">
+                <span className="text-muted-foreground text-[14px] font-medium tracking-wide">Trending</span>
+                <span className="ml-3 text-[9px] text-primary-foreground font-bold border border-primary px-1.5 py-0.5 rounded-sm bg-primary">NEW</span>
               </button>
 
               <button onClick={() => {
@@ -304,17 +304,17 @@ const Header = () => {
                 } else {
                   document.getElementById('new-arrivals')?.scrollIntoView({ behavior: "smooth" });
                 }
-              }} className="w-full flex items-center px-6 py-3.5 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 text-left">
-                <span className="text-gray-600 text-[14px] font-medium tracking-wide">New Arrival</span>
+              }} className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left">
+                <span className="text-muted-foreground text-[14px] font-medium tracking-wide">New Arrival</span>
               </button>
               
               {['Gift Cards', 'Contact Us', 'FAQs', 'Legal'].map((item) => (
                 <button 
                   key={item} 
                   onClick={() => setMenuOpen(false)} 
-                  className="w-full flex items-center px-6 py-3.5 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 text-left"
+                  className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left"
                 >
-                  <span className="text-gray-600 text-[14px] font-medium tracking-wide">{item}</span>
+                  <span className="text-muted-foreground text-[14px] font-medium tracking-wide">{item}</span>
                 </button>
               ))}
 
@@ -323,10 +323,10 @@ const Header = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={() => setMenuOpen(false)}
-                className="w-full flex items-center px-6 py-3.5 bg-white border-none cursor-pointer hover:bg-gray-50 active:bg-gray-100 text-left decoration-transparent"
+                className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left decoration-transparent"
               >
-                <Instagram size={18} className="text-[#E1306C] mr-3" />
-                <span className="text-gray-600 text-[14px] font-medium tracking-wide">Follow on Instagram</span>
+                <Instagram size={18} className="text-primary mr-3" />
+                <span className="text-muted-foreground text-[14px] font-medium tracking-wide">Follow on Instagram</span>
               </a>
             </div>
 
@@ -334,13 +334,13 @@ const Header = () => {
 
             {/* Bottom Promotional Banner */}
             <div 
-              className="bg-[#eedfcb] p-6 mt-4 flex items-center justify-center cursor-pointer border-t border-[#d2c4b3]/50"
+              className="bg-accent p-6 mt-4 flex items-center justify-center cursor-pointer border-t border-border/50"
               onClick={() => { handleNavClick('CATEGORIES', navigate); setMenuOpen(false); }}
             >
               <div className="flex flex-col items-center text-center">
                 <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" alt="Shop" className="w-8 h-8 mb-2 opacity-60" />
-                <h4 className="font-extrabold text-[#2a1b15] text-[13px] tracking-widest uppercase">Enjoy The Best</h4>
-                <h4 className="font-extrabold text-[#2a1b15] text-[13px] tracking-widest uppercase mt-0.5">Shopping Experience!</h4>
+                <h4 className="font-extrabold text-foreground text-[13px] tracking-widest uppercase">Enjoy The Best</h4>
+                <h4 className="font-extrabold text-foreground text-[13px] tracking-widest uppercase mt-0.5">Shopping Experience!</h4>
               </div>
             </div>
 

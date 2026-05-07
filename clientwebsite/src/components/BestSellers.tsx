@@ -57,9 +57,9 @@ const BestSellers = () => {
   return (
     <section id="best-sellers" className="py-10 md:py-16 w-full max-w-5xl mx-auto">
       <div className="text-center px-4 mb-8">
-        <h2 className="font-heading text-3xl md:text-4xl font-normal mb-3 text-foreground italic">Gridox Best Sellers</h2>
-        <div className="w-12 h-[3px] bg-[#8b231a] mx-auto rounded-full mb-3"></div>
-        <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
+        <h2 className="font-heading text-3xl md:text-4xl font-normal mb-3 text-foreground italic">GriDox Best Sellers</h2>
+        <div className="w-12 h-[3px] bg-primary mx-auto rounded-full mb-3"></div>
+        <p className="text-sm md:text-base text-foreground max-w-md mx-auto">
           Our most loved designs, curated just for you.
         </p>
       </div>
@@ -82,10 +82,10 @@ const BestSellers = () => {
                 }}
               >
                 {/* Image Container */}
-                <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-background">
+                <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-background border border-border/50">
                   <OptimizedImage
                     src={product.image}
-                    alt={`Gridox Fashion - ${product.name}`}
+                    alt={`GriDox Fashion - ${product.name}`}
                     className="w-full h-full object-cover transition-transform duration-500"
                     isProductImage
                   />
@@ -117,13 +117,13 @@ const BestSellers = () => {
           )}
         </div>
 
-        
+
         {/* View More Button */}
         {activeProducts.length > 8 && !isExpanded && (
           <div className="mt-12 flex justify-center">
-            <button 
+            <button
               onClick={() => setIsExpanded(true)}
-              className="px-10 py-3.5 bg-[#8b231a] border-none text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-md hover:bg-[#a51d1d] transition-all duration-300 shadow-lg active:scale-95"
+              className="px-10 py-3.5 bg-primary border-none text-primary-foreground text-[10px] font-bold uppercase tracking-[0.2em] rounded-md hover:opacity-90 transition-all duration-300 shadow-lg active:scale-95"
             >
               View More Best Sellers
             </button>
@@ -136,7 +136,7 @@ const BestSellers = () => {
             <button
               key={idx}
               onClick={() => scrollTo(idx)}
-              className={`w-1.5 h-1.5 rounded-full transition-colors ${activeIndex === idx ? "bg-primary" : "bg-[#D8B7A6]"
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${activeIndex === idx ? "bg-primary" : "bg-muted"
                 }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
