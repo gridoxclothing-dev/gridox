@@ -152,6 +152,13 @@ const LeadSchema = new mongoose.Schema({
 
 const Lead = mongoose.model('Lead', LeadSchema);
 
+const AnnouncementSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Announcement = mongoose.model('Announcement', AnnouncementSchema);
+
 const authRoutes = require('./routes/auth');
 const { verifyToken } = require('./middleware/auth');
 const User = require('./models/User');
@@ -709,6 +716,39 @@ app.delete('/api/leads/:id', async (req, res) => {
     res.status(200).send({ message: 'Lead removed successfully' });
   } catch (error) {
     res.status(500).send({ message: 'Error removing lead', error: error.message });
+  }
+});
+
+// Announcement Routes
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const announcements = await Announcement.find().sort({ createdAt: -1 });
+    res.status(200).send(announcements);
+  } catch (error) {
+    res.status(500).send({ message: 'Error fetching announcements', error: error.message });
+  }
+});
+
+app.post('/api/add-announcement', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).send({ message: 'Text is required' });
+    
+    const newAnnouncement = new Announcement({ text });
+    const saved = await newAnnouncement.save();
+    res.status(201).send({ message: 'Announcement added successfully', data: saved });
+  } catch (error) {
+    res.status(500).send({ message: 'Error adding announcement', error: error.message });
+  }
+});
+
+app.delete('/api/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Announcement.findByIdAndDelete(id);
+    res.status(200).send({ message: 'Announcement removed successfully' });
+  } catch (error) {
+    res.status(500).send({ message: 'Error removing announcement', error: error.message });
   }
 });
 

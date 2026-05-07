@@ -50,8 +50,14 @@ interface Lead {
   createdAt: string;
 }
 
+interface Announcement {
+  _id: string;
+  text: string;
+  createdAt: string;
+}
+
 const App = () => {
-  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'announcements'>('banners');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [status, setStatus] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +69,7 @@ const App = () => {
   const [reels, setReels] = useState<any[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
 
@@ -129,6 +136,8 @@ const App = () => {
       fetchLeads();
     } else if (activeTab === 'orders') {
       fetchOrders();
+    } else if (activeTab === 'announcements') {
+      fetchAnnouncements();
     }
   }, [activeTab]);
 
@@ -276,6 +285,59 @@ const App = () => {
       }
     } catch (error) {
       showStatus('Error removing lead.', 'error');
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/announcements`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnnouncements(data);
+      }
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+    }
+  };
+
+  const [announcementText, setAnnouncementText] = useState('');
+
+  const handleAddAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementText.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/add-announcement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: announcementText }),
+      });
+
+      if (response.ok) {
+        showStatus('Announcement added!');
+        setAnnouncementText('');
+        fetchAnnouncements();
+      } else {
+        showStatus('Failed to add announcement.', 'error');
+      }
+    } catch (error) {
+      showStatus('Connection error.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (!confirm('Delete this announcement?')) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/announcements/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        showStatus('Announcement deleted.');
+        fetchAnnouncements();
+      }
+    } catch (error) {
+      showStatus('Error deleting announcement.', 'error');
     }
   };
 
@@ -710,6 +772,9 @@ const App = () => {
             </li>
             <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => { setActiveTab('orders'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">📦</span> Orders
+            </li>
+            <li className={activeTab === 'announcements' ? 'active' : ''} onClick={() => { setActiveTab('announcements'); resetForms(); setIsMobileMenuOpen(false); }}>
+              <span className="icon">📢</span> Announcements
             </li>
           </ul>
         </nav>
@@ -1163,6 +1228,53 @@ const App = () => {
                     ))}
                  </div>
              </div>
+          </div>
+        )}
+
+        {activeTab === 'announcements' && (
+          <div className="fade-in">
+            <div className="glass-card">
+              <h2 className="form-section-title">New Announcement</h2>
+              <form onSubmit={handleAddAnnouncement}>
+                <div className="form-group">
+                  <label>Announcement Text</label>
+                  <div style={{display: 'flex', gap: '10px'}}>
+                    <input 
+                      className="input-styled" 
+                      type="text" 
+                      value={announcementText} 
+                      onChange={e => setAnnouncementText(e.target.value)} 
+                      placeholder="Enter your announcement text here..." 
+                      required 
+                    />
+                    <button type="submit" disabled={isLoading || !announcementText.trim()} className="primary-btn" style={{width: 'auto', whiteSpace: 'nowrap'}}>
+                      Upload
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div className="glass-card" style={{marginTop: '24px'}}>
+              <h2 className="form-section-title">Active Announcements</h2>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                {announcements.length === 0 ? (
+                  <div style={{textAlign: 'center', padding: '20px', opacity: 0.5}}>
+                    <p>No active announcements.</p>
+                  </div>
+                ) : announcements.map(a => (
+                  <div key={a._id} className="lead-item">
+                    <div className="lead-info">
+                      <h3 style={{fontSize: '15px'}}>{a.text}</h3>
+                      <div className="lead-meta">🕒 {new Date(a.createdAt).toLocaleString()}</div>
+                    </div>
+                    <button className="btn-icon delete" onClick={() => handleDeleteAnnouncement(a._id)}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
