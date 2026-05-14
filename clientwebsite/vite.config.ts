@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: 8080,
     strictPort: false,
+    allowedHosts: ["miles-email-chess-psychological.trycloudflare.com", "localhost"],
     hmr: {
       overlay: false,
     },

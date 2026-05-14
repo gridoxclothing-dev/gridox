@@ -39,6 +39,7 @@ const CheckoutPage = () => {
   });
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<'COD' | 'ONLINE'>('ONLINE');
 
   useEffect(() => {
     // 1. Check Auth Status
@@ -87,6 +88,104 @@ const CheckoutPage = () => {
     e.preventDefault();
     setIsPlacingOrder(true);
     try {
+      if (paymentMode === 'ONLINE') {
+        console.log('[PAYMENT] Creating session...', { amount: finalTotal, customerEmail: user.email });
+        const sessionResponse = await fetch('/api/payments/create-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: finalTotal,
+            customerName: address.name,
+            customerEmail: user.email,
+            customerPhone: address.phone
+          }),
+          credentials: 'include'
+        });
+
+        if (!sessionResponse.ok) {
+          const errData = await sessionResponse.json();
+          console.error('[PAYMENT] Session creation failed:', errData);
+          throw new Error(errData.message || 'Failed to create payment session');
+        }
+
+        const sessionData = await sessionResponse.json();
+        console.log('[PAYMENT] Session created:', sessionData);
+        
+        // 2. Initialize Cashfree
+        if (!(window as any).Cashfree) {
+          console.error('[PAYMENT] Cashfree SDK not found on window object');
+          throw new Error('Payment SDK failed to load. Please refresh the page.');
+        }
+
+        const cashfreeMode = sessionData.environment || "production";
+        console.log('[PAYMENT] Initializing SDK. Mode detected:', cashfreeMode);
+
+        const cashfree = (window as any).Cashfree({
+          mode: cashfreeMode 
+        });
+
+        const checkoutOptions = {
+          paymentSessionId: sessionData.payment_session_id,
+          redirectTarget: "_self", // Or "_modal" for modal-based checkout
+        };
+
+        // 3. Start Checkout
+        // This will either redirect or open modal depending on SDK version and config
+        // For v3 SDK, we use checkout()
+        await cashfree.checkout(checkoutOptions).then(async (result: any) => {
+          if (result.error) {
+            console.error("Cashfree Error:", result.error);
+            alert(result.error.message || "Payment failed. Please try again.");
+            setIsPlacingOrder(false);
+          }
+          
+          if (result.redirect) {
+            // This happens when redirectTarget is _self
+            console.log("Redirecting to payment...");
+          }
+
+          // If payment was success (handled by return_url or callback)
+          // We'll create the actual order after successful payment verification
+          // but for now, we'll create it before or use the return_url to create it.
+          // Better: Create the order now with status 'PAYMENT_PENDING'
+        });
+
+        // NOTE: In a real-world scenario, we'd create the order in DB FIRST 
+        // with a 'PAYMENT_PENDING' status, then update it via webhook.
+        // For simplicity here, we'll create it if redirect didn't happen yet or use callback.
+        
+        // Actually, let's create the order first
+        const orderData = {
+          userEmail: user.email,
+          items: cartItems.map(item => ({
+            productId: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            size: item.size
+          })),
+          address: address,
+          paymentMethod: "ONLINE",
+          totalAmount: finalTotal,
+          status: 'Payment Pending'
+        };
+
+        const orderResponse = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+          credentials: 'include'
+        });
+
+        if (!orderResponse.ok) {
+          throw new Error('Failed to record order');
+        }
+
+        return; // Redirect handled by Cashfree
+      }
+
+      // COD LOGIC
       const orderData = {
         userEmail: user.email,
         items: cartItems.map(item => ({
@@ -116,9 +215,9 @@ const CheckoutPage = () => {
       } else {
         alert("Failed to place order. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Order error:", error);
-      alert("An error occurred. Please try again.");
+      alert(error.message || "An error occurred. Please try again.");
     } finally {
       setIsPlacingOrder(false);
     }
@@ -317,15 +416,44 @@ const CheckoutPage = () => {
                     <CreditCard className="mr-2" size={20} /> Choose Payment Mode
                   </h2>
                   
-                  <div className="border border-[#001325] p-4 bg-background flex items-center justify-between mb-8 cursor-pointer relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001325]"></div>
+                  {/* Online Payment Option */}
+                  <div 
+                    onClick={() => setPaymentMode('ONLINE')}
+                    className={`border p-4 bg-background flex items-center justify-between mb-4 cursor-pointer relative overflow-hidden transition-all ${paymentMode === 'ONLINE' ? 'border-[#001325] shadow-sm' : 'border-border opacity-70'}`}
+                  >
+                    {paymentMode === 'ONLINE' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001325]"></div>}
                     <div className="flex items-center pl-2">
-                      <div className="w-4 h-4 rounded-full bg-[#001325] mr-3 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-background"></div>
+                      <div className={`w-4 h-4 rounded-full border border-[#001325] mr-3 flex items-center justify-center ${paymentMode === 'ONLINE' ? 'bg-[#001325]' : ''}`}>
+                        {paymentMode === 'ONLINE' && <div className="w-1.5 h-1.5 rounded-full bg-background"></div>}
                       </div>
-                      <span className="font-medium text-foreground">Cash on Delivery (COD)</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground text-sm uppercase tracking-wider">Pay Online</span>
+                        <span className="text-xs text-muted-foreground">UPI, Cards, Netbanking, Wallets</span>
+                      </div>
                     </div>
-                    <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">AVAILABLE</span>
+                    <div className="flex gap-2 items-center opacity-80">
+                      <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="Visa" className="h-3" />
+                      <img src="https://cdn-icons-png.flaticon.com/512/196/196566.png" alt="Mastercard" className="h-4" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-3" />
+                    </div>
+                  </div>
+
+                  {/* COD Option */}
+                  <div 
+                    onClick={() => setPaymentMode('COD')}
+                    className={`border p-4 bg-background flex items-center justify-between mb-8 cursor-pointer relative overflow-hidden transition-all ${paymentMode === 'COD' ? 'border-[#001325] shadow-sm' : 'border-border opacity-70'}`}
+                  >
+                    {paymentMode === 'COD' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#001325]"></div>}
+                    <div className="flex items-center pl-2">
+                      <div className={`w-4 h-4 rounded-full border border-[#001325] mr-3 flex items-center justify-center ${paymentMode === 'COD' ? 'bg-[#001325]' : ''}`}>
+                        {paymentMode === 'COD' && <div className="w-1.5 h-1.5 rounded-full bg-background"></div>}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground text-sm uppercase tracking-wider">Cash on Delivery (COD)</span>
+                        <span className="text-xs text-muted-foreground">Pay when your order arrives</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 border border-green-100 rounded tracking-tighter">AVAILABLE</span>
                   </div>
 
                   <div className="border-t border-border pt-6">

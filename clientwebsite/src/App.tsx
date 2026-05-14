@@ -21,6 +21,7 @@ const OrdersPage = lazy(() => import("./pages/OrdersPage.tsx"));
 const ContactUs = lazy(() => import("./pages/ContactUs.tsx"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions.tsx"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy.tsx"));
+const OrderStatusPage = lazy(() => import("./pages/OrderStatusPage.tsx"));
 // Dashboard removed as per user request
 
 // Simple loading fallback
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/order-status" element={<OrderStatusPage />} />
               <Route path="*" element={<NotFound />} />
 
             </Routes>

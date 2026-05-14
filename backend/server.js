@@ -35,7 +35,12 @@ app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions)); // Enable pre-flight for all routes
 
 app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ 
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(passport.initialize());
 
@@ -164,6 +169,16 @@ const { verifyToken } = require('./middleware/auth');
 const User = require('./models/User');
 const Order = require('./models/Order');
 
+// Cashfree Configuration
+const { Cashfree, CFEnvironment } = require('cashfree-pg');
+const cashfreeEnv = process.env.CASHFREE_ENV === 'PRODUCTION' ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+
+const cashfree = new Cashfree(
+  cashfreeEnv,
+  process.env.CASHFREE_APP_ID,
+  process.env.CASHFREE_SECRET_KEY
+);
+
 app.use('/api/auth', authRoutes);
 
 // Auth Status Check for debugging
@@ -249,6 +264,120 @@ app.post('/api/orders', verifyToken, async (req, res) => {
     res.status(201).json({ message: 'Order placed successfully', orderId: newOrder._id });
   } catch (error) {
     res.status(500).json({ message: 'Error placing order', error: error.message });
+  }
+});
+
+// Create Cashfree Payment Session
+app.post('/api/payments/create-session', verifyToken, async (req, res) => {
+  try {
+    const { amount, customerName, customerEmail, customerPhone } = req.body;
+    
+    const request = {
+      order_amount: amount,
+      order_currency: "INR",
+      order_id: `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      customer_details: {
+        customer_id: customerEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
+        customer_name: customerName
+      },
+      order_meta: {
+        return_url: `${process.env.FRONTEND_URL || 'https://gridox.in'}/order-status?order_id={order_id}`
+      }
+    };
+
+    // Call Cashfree API using the v5 instance method
+    const response = await cashfree.PGCreateOrder(request);
+    res.status(200).json({
+      ...response.data,
+      environment: process.env.CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+    });
+  } catch (error) {
+    console.error('Cashfree Create Order Error:', error.response?.data || error.message);
+    const detailedError = error.response?.data?.message || error.message;
+    res.status(500).json({ 
+      message: detailedError, 
+      error: error.message 
+    });
+  }
+});
+
+// Verify Cashfree Payment
+app.get('/api/payments/verify/:orderId', verifyToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const response = await cashfree.PGOrderFetchPayments(orderId);
+    
+    // Check if any payment is successful
+    const payments = response.data;
+    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
+
+    if (successfulPayment) {
+      res.status(200).json({ status: 'SUCCESS', payment: successfulPayment });
+    } else {
+      res.status(200).json({ status: 'PENDING', message: 'No successful payment found yet' });
+    }
+  } catch (error) {
+    console.error('Cashfree Verify Error:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Error verifying payment' });
+  }
+});
+
+// Cashfree Webhook Handler
+app.post('/api/payments/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-webhook-signature'];
+    const timestamp = req.headers['x-webhook-timestamp'];
+    const rawBody = req.rawBody;
+
+    if (!signature || !timestamp || !rawBody) {
+      console.warn('[WEBHOOK] Missing headers or body');
+      return res.status(400).send('Missing headers');
+    }
+
+    // Verify Webhook Signature
+    try {
+      cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
+      console.log('[WEBHOOK] Signature Verified');
+    } catch (err) {
+      console.error('[WEBHOOK] Signature Verification Failed:', err.message);
+      return res.status(400).send('Invalid signature');
+    }
+
+    const event = JSON.parse(rawBody);
+    console.log(`[WEBHOOK] Received Event: ${event.type}`);
+
+    if (event.type === 'PAYMENT_SUCCESS_WEBHOOK') {
+      const { order, payment } = event.data;
+      const orderId = order.order_id;
+      
+      console.log(`[WEBHOOK] Payment Success for Order: ${orderId}`);
+      
+      // Update Order Status in Database
+      // Note: order_id in Cashfree was created as `order_${Date.now()}_...`
+      // We need to find the order by some identifier or link the Cashfree order_id to our DB
+      // For now, let's just log it. In production, you'd find and update the Order model.
+      
+      const dbOrder = await Order.findOne({ 
+        $or: [
+          { _id: orderId.split('_')[1] }, // If orderId was order_ID_...
+          { userEmail: order.customer_details.customer_email } // Fallback/Search
+        ]
+      }).sort({ createdAt: -1 });
+
+      if (dbOrder) {
+        dbOrder.status = 'Confirmed';
+        dbOrder.paymentMethod = 'ONLINE';
+        await dbOrder.save();
+        console.log(`[WEBHOOK] Database Order Updated: ${dbOrder._id}`);
+      }
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('[WEBHOOK] Error:', error.message);
+    res.status(500).send('Internal Server Error');
   }
 });
 
