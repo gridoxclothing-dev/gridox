@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const OrderItemSchema = new mongoose.Schema({
   productId: String,
   name: String,
+  category: String, // Added category field
   price: Number,
   quantity: Number,
   image: String,

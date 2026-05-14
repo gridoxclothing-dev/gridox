@@ -12,6 +12,7 @@ interface CartItem {
   quantity: number;
   image: string;
   size: string;
+  category?: string;
 }
 
 const CheckoutPage = () => {
@@ -163,7 +164,8 @@ const CheckoutPage = () => {
             price: item.price,
             quantity: item.quantity,
             image: item.image,
-            size: item.size
+            size: item.size,
+            category: item.category || ""
           })),
           address: address,
           paymentMethod: "ONLINE",
@@ -194,7 +196,8 @@ const CheckoutPage = () => {
           price: item.price,
           quantity: item.quantity,
           image: item.image,
-          size: item.size
+          size: item.size,
+          category: item.category || ""
         })),
         address: address,
         paymentMethod: "COD",

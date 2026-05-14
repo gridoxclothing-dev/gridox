@@ -218,7 +218,7 @@ app.post('/api/orders', verifyToken, async (req, res) => {
         
         await resend.emails.send({
           from: 'GriDox <no-reply@gridox.in>',
-          to: [userEmail, 'igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to customer and both admins
+          to: [userEmail, 'jgowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to customer and both admins
           subject: `Order Confirmation - GriDox Fashion`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
@@ -236,7 +236,7 @@ app.post('/api/orders', verifyToken, async (req, res) => {
                   <tr>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
                       <strong>${i.name}</strong><br/>
-                      <small style="color: #666;">Size: ${i.size} | Qty: ${i.quantity}</small>
+                      <small style="color: #666;">Category: ${i.category || 'N/A'} | Size: ${i.size} | Qty: ${i.quantity}</small>
                     </td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right;">
                       ₹${(i.price * i.quantity).toLocaleString()}
@@ -371,6 +371,41 @@ app.post('/api/payments/webhook', async (req, res) => {
         dbOrder.paymentMethod = 'ONLINE';
         await dbOrder.save();
         console.log(`[WEBHOOK] Database Order Updated: ${dbOrder._id}`);
+
+        // Send Payment Success Notification to Admins
+        try {
+          if (process.env.RESEND_API_KEY) {
+            const { Resend } = require('resend');
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            await resend.emails.send({
+              from: 'GriDox <no-reply@gridox.in>',
+              to: ['jgowthamgk@gmail.com', 'gridoxclothing@gmail.com'],
+              subject: `💰 Payment Received - Order ${orderId}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                  <h2 style="color: #28a745;">Payment Successful</h2>
+                  <p>Payment has been successfully received for Order <strong>${orderId}</strong>.</p>
+                  <p><strong>Amount:</strong> ₹${payment.payment_amount}</p>
+                  <p><strong>Customer:</strong> ${order.customer_details.customer_name} (${order.customer_details.customer_email})</p>
+                  <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">Items Paid:</h3>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    ${dbOrder.items.map(i => `
+                      <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                          <strong>${i.name}</strong><br/>
+                          <small style="color: #666;">Category: ${i.category || 'N/A'} | Size: ${i.size} | Qty: ${i.quantity}</small>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                  <p>The order status has been updated to <strong>Confirmed</strong> in the database.</p>
+                </div>
+              `
+            });
+          }
+        } catch (mailErr) {
+          console.error('[WEBHOOK] Failed to send payment success email:', mailErr.message);
+        }
       }
     }
 
@@ -791,33 +826,30 @@ app.post('/api/leads', async (req, res) => {
     const saved = await newLead.save();
     console.log(`Lead Captured Successfully: ${email} | ${phone || 'No Phone'}`);
 
-    // Setup Lead Notification Email
-    const smtpUser = process.env.SMTP_EMAIL;
-    const smtpPass = process.env.SMTP_PASSWORD;
-    if (smtpUser && smtpPass) {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: smtpUser,
-          pass: smtpPass
-        }
-      });
-
-      // Fire and forget lead notification to avoid UI lag
-      transporter.sendMail({
-        from: `"GriDox Notification" <${smtpUser}>`,
-        to: ['igowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to both admin emails
-        subject: "🎉 New Verified Lead Captured",
-        html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; max-width: 500px;">
-                <h2 style="color: #d11243; margin-top: 0;">New Lead Alert</h2>
-                <p>A new customer has successfully verified their email to claim the discount code.</p>
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                  <p style="margin: 0 0 10px 0;"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-                  <p style="margin: 0;"><strong>Phone:</strong> ${phone || '<i>Not provided</i>'}</p>
-                </div>
-                <p style="font-size: 12px; color: #888;">This lead has been saved to your MongoDB Atlas dashboard.</p>
-               </div>`
-      }).catch(err => console.error("Lead alert email failed:", err)); // Fail silently if mail errors out
+    // Setup Lead Notification Email via Resend
+    try {
+      if (process.env.RESEND_API_KEY) {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        // Fire and forget lead notification
+        resend.emails.send({
+          from: 'GriDox <no-reply@gridox.in>',
+          to: ['jgowthamgk@gmail.com', 'gridoxclothing@gmail.com'],
+          subject: "🎉 New Verified Lead Captured",
+          html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; max-width: 500px; border-radius: 10px;">
+                  <h2 style="color: #d11243; margin-top: 0;">New Lead Alert</h2>
+                  <p>A new customer has successfully verified their email to claim the discount code.</p>
+                  <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p style="margin: 0 0 10px 0;"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+                    <p style="margin: 0;"><strong>Phone:</strong> ${phone || '<i>Not provided</i>'}</p>
+                  </div>
+                  <p style="font-size: 12px; color: #888;">This lead has been saved to your MongoDB Atlas dashboard.</p>
+                 </div>`
+        }).catch(err => console.error("Lead alert email failed:", err));
+      }
+    } catch (err) {
+      console.error("Lead notification error:", err);
     }
 
     res.status(201).send({ message: 'Lead created successfully', data: saved });

@@ -101,6 +101,7 @@ const ProductDetailPage = () => {
       id: `${product._id}-${selectedSize || 'Standard'}`,
       productId: product._id,
       name: product.name,
+      category: mainCat, // Added category
       price: product.price,
       quantity: 1,
       image: product.image,
