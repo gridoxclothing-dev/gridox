@@ -50,7 +50,7 @@ const ContactUs = () => {
                   <MapPin size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-1">GriDox Flagship Location</h3>
+                  <h3 className="font-bold text-gray-900 mb-1">GriDox Store Location</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     GriDox Fashion Studio<br />
                     Sakthi Theatre Rd, Shrinagar,<br />

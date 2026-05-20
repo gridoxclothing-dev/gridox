@@ -112,9 +112,9 @@ const Header = () => {
 
         {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-          <img 
-            src="/logo.jpeg" 
-            alt="GriDox Logo" 
+          <img
+            src="/logo.jpeg"
+            alt="GriDox Logo"
             className="h-8 md:h-10 w-auto object-contain"
           />
           <h1 className="font-heading text-xl md:text-2xl font-bold tracking-tight text-foreground m-0">
@@ -214,16 +214,16 @@ const Header = () => {
       {menuOpen && (
         <div className="md:hidden fixed inset-0 z-[2000] flex">
           {/* Dark Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" 
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setMenuOpen(false)}
           />
-          
+
           {/* Drawer Panel */}
           <div className="relative w-[85%] max-w-[340px] bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 overflow-y-auto">
-            
+
             {/* Close Button Inside Drawer */}
-            <button 
+            <button
               className="absolute top-3 right-3 p-2 bg-muted rounded-full z-10 border-none cursor-pointer"
               onClick={() => setMenuOpen(false)}
             >
@@ -231,11 +231,11 @@ const Header = () => {
             </button>
 
             {/* Top Promotional Banner */}
-            <div 
-              className="bg-secondary p-5 flex items-center justify-between cursor-pointer border-b border-border" 
-              onClick={() => { 
-                setMenuOpen(false); 
-                window.dispatchEvent(new CustomEvent('openPromoModal', { detail: { src: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=60' } })); 
+            <div
+              className="bg-secondary p-5 flex items-center justify-between cursor-pointer border-b border-border"
+              onClick={() => {
+                setMenuOpen(false);
+                window.dispatchEvent(new CustomEvent('openPromoModal', { detail: { src: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop&q=60' } }));
               }}
             >
               <div>
@@ -246,17 +246,17 @@ const Header = () => {
                   SIGN UP. LOGIN <ChevronRight size={12} className="ml-0.5" />
                 </p>
               </div>
-              <img 
-                src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&auto=format&fit=crop&q=60" 
-                alt="Promo" 
-                className="w-[72px] h-[72px] object-cover rounded-full shadow-md border-2 border-white" 
+              <img
+                src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&auto=format&fit=crop&q=60"
+                alt="Promo"
+                className="w-[72px] h-[72px] object-cover rounded-full shadow-md border-2 border-white"
               />
             </div>
 
             {/* Primary Navigation Links */}
             <div className="py-2">
               {['HOME', 'CATEGORIES', 'BULK QUERIES', 'ABOUT US'].map((name) => (
-                <button 
+                <button
                   key={name}
                   onClick={() => { handleNavClick(name, navigate); setMenuOpen(false); }}
                   className="w-full flex items-center justify-between px-6 py-4 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted transition-colors"
@@ -307,20 +307,20 @@ const Header = () => {
               }} className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left">
                 <span className="text-muted-foreground text-[14px] font-medium tracking-wide">New Arrival</span>
               </button>
-              
+
               {['Gift Cards', 'Contact Us', 'FAQs', 'Legal'].map((item) => (
-                <button 
-                  key={item} 
-                  onClick={() => setMenuOpen(false)} 
+                <button
+                  key={item}
+                  onClick={() => setMenuOpen(false)}
                   className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left"
                 >
                   <span className="text-muted-foreground text-[14px] font-medium tracking-wide">{item}</span>
                 </button>
               ))}
 
-              <a 
-                href="#" 
-                target="_blank" 
+              <a
+                href="#"
+                target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMenuOpen(false)}
                 className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left decoration-transparent"
@@ -333,7 +333,7 @@ const Header = () => {
             <div className="flex-1"></div>
 
             {/* Bottom Promotional Banner */}
-            <div 
+            <div
               className="bg-accent p-6 mt-4 flex items-center justify-center cursor-pointer border-t border-border/50"
               onClick={() => { handleNavClick('CATEGORIES', navigate); setMenuOpen(false); }}
             >

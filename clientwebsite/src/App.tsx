@@ -55,7 +55,9 @@ const App = () => (
               <Route path="/my-orders" element={<OrdersPage />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/refund" element={<RefundPolicy />} />
               <Route path="/order-status" element={<OrderStatusPage />} />
               <Route path="*" element={<NotFound />} />
 

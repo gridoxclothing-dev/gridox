@@ -27,10 +27,10 @@ const StoreLocator = () => {
         />
         <div className="relative z-20 text-center space-y-4 md:space-y-6 px-4">
           <div className="inline-block px-3 py-1.5 md:px-4 border border-white/20 text-white text-[9px] uppercase tracking-[0.4em] font-semibold backdrop-blur-sm mb-2 md:mb-2">
-            Flagship Destination
+            Boutique Destination
           </div>
           <h1 className="font-heading text-3xl md:text-6xl lg:text-7xl text-white font-light tracking-tight">
-            Our <span className="italic font-normal text-[#e5d5c5]">Flagship</span> Store
+            Our <span className="italic font-normal text-[#e5d5c5]">Boutique</span> Store
           </h1>
           <div className="w-12 md:w-16 h-px bg-[#8b231a] mx-auto" />
         </div>
@@ -45,7 +45,7 @@ const StoreLocator = () => {
               <div className="space-y-6 md:space-y-8">
                 <div className="space-y-3 md:space-y-4">
                   <h2 className="font-heading text-3xl md:text-4xl text-[#000000] leading-tight">
-                    Our Flagship Boutique in <span className="text-[#8b231a] italic">Tiruppur</span>
+                    Our Boutique in <span className="text-[#8b231a] italic">Tiruppur</span>
                   </h2>
                   <p className="text-gray-500 text-base md:text-lg leading-relaxed max-w-md">
                     Experience our latest collections and personalized styling in our signature boutique setting.

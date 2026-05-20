@@ -78,7 +78,7 @@ const Footer = () => {
               <li className="flex items-start gap-4 text-muted-foreground text-xs font-medium group">
                 <MapPin size={18} className="text-primary mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="leading-relaxed">
-                  <strong className="text-card-foreground block mb-1">GriDox Flagship Store</strong>
+                  <strong className="text-card-foreground block mb-1">GriDox Store</strong>
                   Sakthi Theatre Rd, Shrinagar,<br />
                   Pitchampalayam Pudur, Tiruppur,<br />
                   Chettipalayam, Tamil Nadu 641603

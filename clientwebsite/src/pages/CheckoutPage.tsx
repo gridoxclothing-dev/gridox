@@ -41,6 +41,7 @@ const CheckoutPage = () => {
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'COD' | 'ONLINE'>('ONLINE');
+  const [isCheckingPincode, setIsCheckingPincode] = useState(false);
 
   useEffect(() => {
     // 1. Check Auth Status
@@ -226,10 +227,34 @@ const CheckoutPage = () => {
     }
   };
 
-  const handleAddressSubmit = (e: React.FormEvent) => {
+  const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (address.name && address.phone && address.addressLine && address.pincode) {
+    if (!address.name || !address.phone || !address.addressLine || !address.pincode) {
+      alert("Please fill all required fields.");
+      return;
+    }
+
+    const pin = address.pincode.trim();
+    if (!pin || pin.length !== 6 || !/^[1-9][0-9]{5}$/.test(pin)) {
+      alert("Please enter a valid 6-digit Indian pincode.");
+      return;
+    }
+
+    setIsCheckingPincode(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+      if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice) {
+        setStep(3);
+      } else {
+        alert("Invalid Pincode. Please enter a valid Indian pincode.");
+      }
+    } catch (err) {
+      console.error("Pincode check error:", err);
+      // Fallback: accept format-validated pincode if API is unreachable
       setStep(3);
+    } finally {
+      setIsCheckingPincode(false);
     }
   };
 
@@ -393,9 +418,10 @@ const CheckoutPage = () => {
                     <div className="pt-4">
                       <button 
                         type="submit"
-                        className="px-8 py-3 bg-primary text-primary-foreground font-medium text-sm tracking-wider hover:opacity-90 transition-all rounded-sm"
+                        disabled={isCheckingPincode}
+                        className="px-8 py-3 bg-primary text-primary-foreground font-medium text-sm tracking-wider hover:opacity-90 transition-all rounded-sm disabled:opacity-50"
                       >
-                        DELIVER HERE
+                        {isCheckingPincode ? 'CHECKING PINCODE...' : 'DELIVER HERE'}
                       </button>
                     </div>
                   </form>

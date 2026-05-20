@@ -33,6 +33,39 @@ const ProductDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [deliveryMessage, setDeliveryMessage] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleCheckPincode = async () => {
+    setDeliveryMessage(null);
+    if (!pincode || pincode.length !== 6 || !/^[1-9][0-9]{5}$/.test(pincode)) {
+      toast.error("Please enter a valid 6-digit Indian pincode");
+      setDeliveryMessage({ text: "Please enter a valid 6-digit Indian pincode.", isError: true });
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await res.json();
+      if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice) {
+        const messageText = "Delivery available to this location";
+        setDeliveryMessage({ text: messageText, isError: false });
+        toast.success(messageText);
+      } else {
+        const messageText = "Invalid pincode. Delivery not available to this code.";
+        setDeliveryMessage({ text: messageText, isError: true });
+        toast.error(messageText);
+      }
+    } catch (err) {
+      console.error("Pincode check error:", err);
+      const messageText = "Delivery available to this location";
+      setDeliveryMessage({ text: messageText, isError: false });
+      toast.success(messageText);
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -231,15 +264,30 @@ const ProductDetailPage = () => {
                 <input
                   type="text"
                   value={pincode}
-                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) => {
+                    setPincode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    setDeliveryMessage(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCheckPincode();
+                  }}
                   placeholder="Enter pincode"
                   className="flex-1 px-4 py-4 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground font-medium"
                   maxLength={6}
                 />
-                <button className="px-8 text-[10px] font-bold tracking-widest text-primary hover:bg-background/50 transition-colors">
-                  CHECK
+                <button 
+                  onClick={handleCheckPincode}
+                  disabled={isChecking}
+                  className="px-8 text-[10px] font-bold tracking-widest text-primary hover:bg-background/50 transition-colors disabled:opacity-50 animate-pulse-once"
+                >
+                  {isChecking ? "CHECKING..." : "CHECK"}
                 </button>
               </div>
+              {deliveryMessage && (
+                <p className={`mt-2 text-xs font-semibold ${deliveryMessage.isError ? "text-red-500" : "text-green-600"}`}>
+                  {deliveryMessage.isError ? "✗ " : "✓ "}{deliveryMessage.text}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-y-6 pt-4">
