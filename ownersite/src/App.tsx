@@ -58,7 +58,7 @@ interface Announcement {
 }
 
 const App = () => {
-  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'cancelled_orders' | 'announcements'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'completed_orders' | 'cancelled_orders' | 'announcements'>('banners');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [status, setStatus] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -188,8 +188,8 @@ const App = () => {
 
   const handleUpdateOrderDate = async (orderId: string, milestone: string, dateStr: string) => {
     // Optimistic update locally to prevent focus loss!
-    setOrders(prevOrders => prevOrders.map(o => 
-      o._id === orderId 
+    setOrders(prevOrders => prevOrders.map(o =>
+      o._id === orderId
         ? { ...o, statusDates: { ...(o.statusDates || {}), [milestone]: dateStr } }
         : o
     ));
@@ -849,6 +849,9 @@ const App = () => {
             <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => { setActiveTab('orders'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">📦</span> Orders
             </li>
+            <li className={activeTab === 'completed_orders' ? 'active' : ''} onClick={() => { setActiveTab('completed_orders'); resetForms(); setIsMobileMenuOpen(false); }}>
+              <span className="icon">✅</span> Completed Orders
+            </li>
             <li className={activeTab === 'cancelled_orders' ? 'active' : ''} onClick={() => { setActiveTab('cancelled_orders'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">❌</span> Cancelled Orders
             </li>
@@ -1159,7 +1162,7 @@ const App = () => {
             <div className="content-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
               {products.map(p => {
                 const isEditingStock = editingStockProductId === p._id;
-                
+
                 return (
                   <div key={p._id} className="item-card" style={{ paddingBottom: '12px' }}>
                     <div className="item-image" style={{ backgroundImage: `url("${p.image}")` }}>
@@ -1192,8 +1195,8 @@ const App = () => {
                               return (
                                 <div key={sz} style={{ background: '#f8fafc', padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
                                   <label style={{ fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0 }}>
-                                    <input 
-                                      type="checkbox" 
+                                    <input
+                                      type="checkbox"
                                       checked={isActive}
                                       onChange={(e) => {
                                         if (e.target.checked) {
@@ -1206,7 +1209,7 @@ const App = () => {
                                     {sz}
                                   </label>
                                   {isActive && (
-                                    <input 
+                                    <input
                                       type="number"
                                       min="0"
                                       value={quantity}
@@ -1229,14 +1232,14 @@ const App = () => {
                               const quantity = stockObj ? stockObj.quantity : 0;
 
                               return (
-                                <span 
-                                  key={sz} 
-                                  style={{ 
-                                    display: 'inline-flex', 
-                                    alignItems: 'center', 
-                                    padding: '3px 6px', 
-                                    borderRadius: '4px', 
-                                    fontSize: '10px', 
+                                <span
+                                  key={sz}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    padding: '3px 6px',
+                                    borderRadius: '4px',
+                                    fontSize: '10px',
                                     fontWeight: 700,
                                     background: hasSize ? (quantity <= 5 ? '#fef2f2' : '#f0fdf4') : '#f8fafc',
                                     color: hasSize ? (quantity <= 5 ? '#ef4444' : '#166534') : '#94a3b8',
@@ -1255,15 +1258,15 @@ const App = () => {
                     <div className="card-actions" style={{ display: 'flex', gap: '6px', padding: '12px 16px 4px 16px', borderTop: '1px solid #f1f5f9' }}>
                       {isEditingStock ? (
                         <>
-                          <button 
-                            className="btn-icon edit" 
+                          <button
+                            className="btn-icon edit"
                             style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', flex: 1 }}
                             onClick={() => handleSaveInlineStock(p._id)}
                           >
                             Save Stock
                           </button>
-                          <button 
-                            className="btn-icon delete" 
+                          <button
+                            className="btn-icon delete"
                             style={{ background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', flex: 1 }}
                             onClick={() => setEditingStockProductId(null)}
                           >
@@ -1272,8 +1275,8 @@ const App = () => {
                         </>
                       ) : (
                         <>
-                          <button 
-                            className="btn-icon edit" 
+                          <button
+                            className="btn-icon edit"
                             onClick={() => {
                               setEditingStockProductId(p._id);
                               setTempStock(p.sizesWithStock || []);
@@ -1422,11 +1425,11 @@ const App = () => {
                 Manage all incoming customer orders.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {orders.filter((o: any) => o.status !== 'Cancelled').length === 0 ? (
+                {orders.filter((o: any) => o.status !== 'Cancelled' && o.status !== 'Completed').length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
                     <p>No active orders.</p>
                   </div>
-                ) : orders.filter((o: any) => o.status !== 'Cancelled').map((order: any) => (
+                ) : orders.filter((o: any) => o.status !== 'Cancelled' && o.status !== 'Completed').map((order: any) => (
                   <div key={order._id} className="lead-item" style={{ display: 'block', padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
                       <div>
@@ -1435,78 +1438,116 @@ const App = () => {
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <h3 style={{ fontSize: '18px', color: '#10b981', margin: 0 }}>₹{order.totalAmount}</h3>
-                        
+
                         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                           <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.5px' }}>UPDATE STATUS</label>
                           <select
                             value={order.status || 'Pending'}
                             onChange={async (e) => {
-                            const newStatus = e.target.value;
-                            try {
-                              setIsLoading(true);
-                              const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: newStatus })
-                              });
-                              if (res.ok) {
-                                showStatus('Order status updated successfully!');
-                                fetchOrders();
-                              } else {
-                                showStatus('Failed to update status', 'error');
+                              const newStatus = e.target.value;
+                              try {
+                                setIsLoading(true);
+                                const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: newStatus })
+                                });
+                                if (res.ok) {
+                                  showStatus('Order status updated successfully!');
+                                  fetchOrders();
+                                } else {
+                                  showStatus('Failed to update status', 'error');
+                                }
+                              } catch (err) {
+                                showStatus('Error updating status', 'error');
+                              } finally {
+                                setIsLoading(false);
                               }
-                            } catch (err) {
-                              showStatus('Error updating status', 'error');
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                          style={{
-                            background: order.status === 'Cancelled' ? '#fee2e2' : (order.status === 'Pending' || !order.status) ? '#fef3c7' : '#d1fae5',
-                            color: order.status === 'Cancelled' ? '#991b1b' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#065f46',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            marginTop: '4px',
-                            border: `1px solid ${order.status === 'Cancelled' ? '#fca5a5' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#34d399'}`,
-                            cursor: 'pointer',
-                            outline: 'none'
-                          }}
-                        >
-                          {['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'].map(status => {
-                            const statuses = ['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
-                            const currentIndex = statuses.indexOf(order.status || 'Pending');
-                            const itemIndex = statuses.indexOf(status);
-                            
-                            // If it's the current status or a previous status, color it red.
-                            // The user requested: "upto packed every text need to be red"
-                            const isPastOrCurrent = itemIndex <= currentIndex && currentIndex !== -1;
-                            
-                            return (
-                              <option 
-                                key={status} 
-                                value={status}
-                                style={{ color: isPastOrCurrent ? '#ef4444' : '#0f172a', fontWeight: isPastOrCurrent ? 'bold' : 'normal' }}
-                              >
-                                {isPastOrCurrent ? `✓ ${status}` : status}
-                              </option>
-                            );
-                          })}
-                          <option value="Cancelled" style={{ color: '#ef4444', fontWeight: 'bold' }}>Cancelled</option>
-                        </select>
+                            }}
+                            style={{
+                              background: order.status === 'Cancelled' ? '#fee2e2' : (order.status === 'Pending' || !order.status) ? '#fef3c7' : '#d1fae5',
+                              color: order.status === 'Cancelled' ? '#991b1b' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#065f46',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              marginTop: '4px',
+                              border: `1px solid ${order.status === 'Cancelled' ? '#fca5a5' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#34d399'}`,
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            {['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'].map(status => {
+                              const statuses = ['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
+                              const currentIndex = statuses.indexOf(order.status || 'Pending');
+                              const itemIndex = statuses.indexOf(status);
+
+                              // If it's the current status or a previous status, color it red.
+                              // The user requested: "upto packed every text need to be red"
+                              const isPastOrCurrent = itemIndex <= currentIndex && currentIndex !== -1;
+
+                              return (
+                                <option
+                                  key={status}
+                                  value={status}
+                                  style={{ color: isPastOrCurrent ? '#ef4444' : '#0f172a', fontWeight: isPastOrCurrent ? 'bold' : 'normal' }}
+                                >
+                                  {isPastOrCurrent ? `✓ ${status}` : status}
+                                </option>
+                              );
+                            })}
+                            <option value="Cancelled" style={{ color: '#ef4444', fontWeight: 'bold' }}>Cancelled</option>
+                          </select>
+                          
+                          {order.status === 'Delivered' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  setIsLoading(true);
+                                  const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'Completed' })
+                                  });
+                                  if (res.ok) {
+                                    showStatus('Order moved to Completed Orders!');
+                                    fetchOrders();
+                                  } else {
+                                    showStatus('Failed to update status', 'error');
+                                  }
+                                } catch (err) {
+                                  showStatus('Error updating status', 'error');
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }}
+                              style={{
+                                marginTop: '8px',
+                                padding: '6px 12px',
+                                background: '#10b981',
+                                color: '#fff',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Mark as Completed
+                            </button>
+                          )}
                         </div>
-                        
+
                         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                           <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>EXPECTED DELIVERY</label>
                           <input
                             type="date"
                             value={order.expectedDeliveryDate || ''}
-                             onChange={async (e) => {
+                            onChange={async (e) => {
                               const newDate = e.target.value;
-                              
+
                               // Optimistically update local state to feel responsive and avoid focus theft
-                              setOrders(prevOrders => prevOrders.map(o => 
+                              setOrders(prevOrders => prevOrders.map(o =>
                                 o._id === order._id ? { ...o, expectedDeliveryDate: newDate } : o
                               ));
 
@@ -1686,6 +1727,67 @@ const App = () => {
                             }}
                           />
                         </div>
+                      </div>
+                    </div>
+                    <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+                      🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'completed_orders' && (
+          <div className="fade-in">
+            <div className="glass-card">
+              <h2 className="form-section-title">Completed Orders</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+                View all completed and delivered customer orders.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {orders.filter((o: any) => o.status === 'Completed').length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                    <p>No completed orders.</p>
+                  </div>
+                ) : orders.filter((o: any) => o.status === 'Completed').map((order: any) => (
+                  <div key={order._id} className="lead-item" style={{ display: 'block', padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', margin: 0, color: '#10b981' }}>Order: {order._id.substring(0, 8).toUpperCase()}</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Email: {order.userEmail}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <h3 style={{ fontSize: '18px', color: '#10b981', margin: 0 }}>₹{order.totalAmount}</h3>
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                           <span style={{
+                              padding: '6px 12px',
+                              background: '#d1fae5',
+                              color: '#065f46',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              border: '1px solid #34d399'
+                           }}>✅ Completed</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Delivery Address</h4>
+                        <p style={{ fontSize: '14px', margin: 0 }}><strong>{order.address?.name}</strong> ({order.address?.phone})</p>
+                        <p style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#333' }}>{order.address?.addressLine}, {order.address?.pincode}</p>
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Items Ordered</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px' }}>
+                          {order.items?.map((item: any, i: number) => (
+                            <li key={i} style={{ marginBottom: '4px' }}>
+                              {item.quantity}x {item.name} <span style={{ color: '#888' }}>(Size: {item.size})</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
                     <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
