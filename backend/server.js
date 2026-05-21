@@ -35,7 +35,7 @@ app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions)); // Enable pre-flight for all routes
 
 app.use(cookieParser());
-app.use(express.json({ 
+app.use(express.json({
   limit: '50mb',
   verify: (req, res, buf) => {
     req.rawBody = buf.toString();
@@ -112,6 +112,13 @@ const ProductSchema = new mongoose.Schema({
   image: String, // Main image (Base64)
   gallery: [String], // Array of 5 look images (Base64)
   sizes: [String], // Array of available sizes (e.g. S, M, L, XL)
+  sizesWithStock: {
+    type: [{
+      size: { type: String, required: true },
+      quantity: { type: Number, required: true, default: 0 }
+    }],
+    default: []
+  },
   details: String, // Rich text or long description
   category: { type: [String], default: [], index: true }, // Changed to array for multiple categories
   createdAt: { type: Date, default: Date.now, index: true } // Added index for faster sorting
@@ -205,17 +212,82 @@ app.get('/api/dashboard', verifyToken, async (req, res) => {
 app.post('/api/orders', verifyToken, async (req, res) => {
   try {
     const { userEmail, items, address, paymentMethod, totalAmount } = req.body;
+
+    // Validate Stock Before Placing Order
+    for (const item of items) {
+      if (item.productId && item.size) {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          return res.status(400).json({ message: `Product ${item.name} not found.` });
+        }
+        
+        const sizeStock = product.sizesWithStock?.find(s => s.size === item.size);
+        const availableStock = sizeStock ? sizeStock.quantity : 0;
+        
+        if (item.quantity > availableStock) {
+          return res.status(400).json({ 
+            message: `Insufficient stock for ${product.name} (Size: ${item.size}). Only ${availableStock} available.` 
+          });
+        }
+      }
+    }
+
+    const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const newOrder = new Order({
-      userEmail, items, address, paymentMethod, totalAmount
+      userEmail, 
+      items, 
+      address, 
+      paymentMethod, 
+      totalAmount,
+      statusDates: {
+        placed: localToday
+      }
     });
     await newOrder.save();
+
+    // Deduct stock for each item
+    try {
+      for (const item of items) {
+        if (item.productId && item.size) {
+          const product = await Product.findById(item.productId);
+          if (product) {
+            if (product.sizesWithStock && product.sizesWithStock.length > 0) {
+              const sizeExists = product.sizesWithStock.some(s => s.size === item.size);
+              if (sizeExists) {
+                await Product.updateOne(
+                  { _id: item.productId, "sizesWithStock.size": item.size },
+                  { $inc: { "sizesWithStock.$.quantity": -item.quantity } }
+                );
+              } else {
+                const defaultStock = 10;
+                await Product.updateOne(
+                  { _id: item.productId },
+                  { $push: { sizesWithStock: { size: item.size, quantity: Math.max(0, defaultStock - item.quantity) } } }
+                );
+              }
+            } else {
+              const initialStock = (product.sizes || []).map(sz => ({
+                size: sz,
+                quantity: sz === item.size ? Math.max(0, 10 - item.quantity) : 10
+              }));
+              await Product.updateOne(
+                { _id: item.productId },
+                { $set: { sizesWithStock: initialStock } }
+              );
+            }
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.error('[ORDER] Stock deduction failed:', stockErr);
+    }
 
     // Send email notifications via Resend
     try {
       if (process.env.RESEND_API_KEY) {
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
+
         await resend.emails.send({
           from: 'GriDox <no-reply@gridox.in>',
           to: [userEmail, 'jgowthamgk@gmail.com', 'gridoxclothing@gmail.com'], // Send to customer and both admins
@@ -271,7 +343,7 @@ app.post('/api/orders', verifyToken, async (req, res) => {
 app.post('/api/payments/create-session', verifyToken, async (req, res) => {
   try {
     const { amount, customerName, customerEmail, customerPhone } = req.body;
-    
+
     const request = {
       order_amount: amount,
       order_currency: "INR",
@@ -296,9 +368,9 @@ app.post('/api/payments/create-session', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Cashfree Create Order Error:', error.response?.data || error.message);
     const detailedError = error.response?.data?.message || error.message;
-    res.status(500).json({ 
-      message: detailedError, 
-      error: error.message 
+    res.status(500).json({
+      message: detailedError,
+      error: error.message
     });
   }
 });
@@ -308,7 +380,7 @@ app.get('/api/payments/verify/:orderId', verifyToken, async (req, res) => {
   try {
     const { orderId } = req.params;
     const response = await cashfree.PGOrderFetchPayments(orderId);
-    
+
     // Check if any payment is successful
     const payments = response.data;
     const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
@@ -351,15 +423,15 @@ app.post('/api/payments/webhook', async (req, res) => {
     if (event.type === 'PAYMENT_SUCCESS_WEBHOOK') {
       const { order, payment } = event.data;
       const orderId = order.order_id;
-      
+
       console.log(`[WEBHOOK] Payment Success for Order: ${orderId}`);
-      
+
       // Update Order Status in Database
       // Note: order_id in Cashfree was created as `order_${Date.now()}_...`
       // We need to find the order by some identifier or link the Cashfree order_id to our DB
       // For now, let's just log it. In production, you'd find and update the Order model.
-      
-      const dbOrder = await Order.findOne({ 
+
+      const dbOrder = await Order.findOne({
         $or: [
           { _id: orderId.split('_')[1] }, // If orderId was order_ID_...
           { userEmail: order.customer_details.customer_email } // Fallback/Search
@@ -426,6 +498,111 @@ app.get('/api/orders/:email', verifyToken, async (req, res) => {
   }
 });
 
+// Cancel Order
+app.post('/api/orders/:id/cancel', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Verify ownership
+    if (order.userEmail !== req.user.email) {
+      return res.status(403).json({ message: 'Unauthorized to cancel this order' });
+    }
+
+    // Cancellation rule: only before packed
+    const nonCancellableStates = ['Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    if (nonCancellableStates.includes(order.status)) {
+      return res.status(400).json({ 
+        message: `Order cannot be cancelled once it is ${order.status.toLowerCase()}.` 
+      });
+    }
+
+    // 1. Update Order Status to Cancelled
+    order.status = 'Cancelled';
+    const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    if (!order.statusDates) {
+      order.statusDates = {};
+    }
+    order.statusDates.cancelled = localToday;
+    await order.save();
+
+    // 2. Revert Stock
+    try {
+      for (const item of order.items) {
+        if (item.productId && item.size) {
+          const product = await Product.findById(item.productId);
+          if (product && product.sizesWithStock) {
+            const sizeExists = product.sizesWithStock.some(s => s.size === item.size);
+            if (sizeExists) {
+              await Product.updateOne(
+                { _id: item.productId, 'sizesWithStock.size': item.size },
+                { $inc: { 'sizesWithStock.$.quantity': item.quantity } }
+              );
+            }
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.error('[ORDER CANCEL] Failed to revert stock:', stockErr);
+    }
+
+    // 3. Send Cancellation Email Notifications via Resend
+    try {
+      if (process.env.RESEND_API_KEY) {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        await resend.emails.send({
+          from: 'GriDox <no-reply@gridox.in>',
+          to: [order.userEmail, 'jgowthamgk@gmail.com', 'gridoxclothing@gmail.com', 'igowthamgk@gmail.com'],
+          subject: `Order Cancelled - GriDox Fashion`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+              <h2 style="color: #c92323; text-align: center;">GriDox Order Cancelled</h2>
+              <p>Your order (ID: ${order._id}) has been successfully cancelled.</p>
+              <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h3 style="margin-top: 0;">Cancelled Order Summary:</h3>
+                <p><strong>Customer Email:</strong> ${order.userEmail}</p>
+                <p><strong>Amount Refundable/Cancelled:</strong> ₹${order.totalAmount.toLocaleString()}</p>
+              </div>
+              <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">Cancelled Items</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                ${order.items.map(i => `
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                      <strong>${i.name}</strong><br/>
+                      <small style="color: #666;">Size: ${i.size} | Qty: ${i.quantity}</small>
+                    </td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right;">
+                      ₹${(i.price * i.quantity).toLocaleString()}
+                    </td>
+                  </tr>
+                `).join('')}
+              </table>
+              <p style="color: #666; font-size: 12px; text-align: center; margin-top: 30px;">
+                If payment was already made, the refund will be initiated and credited back to your source account shortly.
+              </p>
+            </div>
+          `
+        });
+        console.log(`[ORDER CANCEL] Cancellation email sent successfully.`);
+      } else {
+        console.log(`[ORDER CANCEL] RESEND_API_KEY missing. Cancellation emails skipped.`);
+      }
+    } catch (mailErr) {
+      console.error('[ORDER CANCEL] Error sending cancellation email:', mailErr);
+    }
+
+    res.status(200).json({ message: 'Order cancelled successfully', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Error cancelling order', error: error.message });
+  }
+});
+
 // Get ALL Orders for Admin
 app.get('/api/admin/orders', async (req, res) => {
   try {
@@ -433,6 +610,31 @@ app.get('/api/admin/orders', async (req, res) => {
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching all orders' });
+  }
+});
+
+// Update Order Status (Admin)
+app.put('/api/admin/orders/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, expectedDeliveryDate, statusDates } = req.body;
+    const updateData = {};
+    if (status !== undefined) updateData.status = status;
+    if (expectedDeliveryDate !== undefined) updateData.expectedDeliveryDate = expectedDeliveryDate;
+
+    if (statusDates !== undefined && statusDates !== null) {
+      for (const [key, val] of Object.entries(statusDates)) {
+        updateData[`statusDates.${key}`] = val;
+      }
+    }
+
+    const updated = await Order.findByIdAndUpdate(id, updateData, { new: true });
+    if (!updated) {
+      return res.status(404).send({ message: 'Order not found' });
+    }
+    res.status(200).send({ message: 'Order updated successfully', order: updated });
+  } catch (error) {
+    res.status(500).send({ message: 'Error updating order', error: error.message });
   }
 });
 
@@ -593,6 +795,26 @@ app.put('/api/products/:id', async (req, res) => {
     res.status(200).send({ message: 'Product updated successfully', data: updated });
   } catch (error) {
     res.status(500).send({ message: 'Error updating product', error: error.message });
+  }
+});
+
+// Fast Stock-only Update Route
+app.put('/api/products/:id/stock', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sizes, sizesWithStock } = req.body;
+
+    const updated = await Product.findByIdAndUpdate(
+      id,
+      { $set: { sizes, sizesWithStock } },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).send({ message: 'Product not found' });
+    }
+    res.status(200).send({ message: 'Stock updated successfully', data: updated });
+  } catch (error) {
+    res.status(500).send({ message: 'Error updating stock', error: error.message });
   }
 });
 
@@ -776,7 +998,7 @@ app.post('/api/send-otp', async (req, res) => {
     if (email) {
       if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
+
         // Fire and forget email to avoid UI lag
         resend.emails.send({
           from: 'GriDox <no-reply@gridox.in>',
@@ -831,7 +1053,7 @@ app.post('/api/leads', async (req, res) => {
       if (process.env.RESEND_API_KEY) {
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
+
         // Fire and forget lead notification
         resend.emails.send({
           from: 'GriDox <no-reply@gridox.in>',
@@ -894,7 +1116,7 @@ app.post('/api/add-announcement', async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).send({ message: 'Text is required' });
-    
+
     const newAnnouncement = new Announcement({ text });
     const saved = await newAnnouncement.save();
     res.status(201).send({ message: 'Announcement added successfully', data: saved });

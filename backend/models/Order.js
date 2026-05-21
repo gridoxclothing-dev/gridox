@@ -24,6 +24,15 @@ const OrderSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: 'COD' },
   totalAmount: { type: Number, required: true },
   status: { type: String, default: 'Pending' },
+  expectedDeliveryDate: { type: String },
+  statusDates: {
+    placed: { type: String },
+    paymentVerified: { type: String },
+    packed: { type: String },
+    shipped: { type: String },
+    outForDelivery: { type: String },
+    delivered: { type: String }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

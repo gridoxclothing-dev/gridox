@@ -21,6 +21,7 @@ interface Product {
   image: string;
   gallery: string[];
   sizes: string[];
+  sizesWithStock?: { size: string; quantity: number }[];
   details: string;
   category: string[];
 }
@@ -226,19 +227,45 @@ const ProductDetailPage = () => {
                   <button className="text-[10px] text-primary font-bold tracking-widest hover:underline uppercase">Size Guide</button>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`w-12 h-12 rounded-full border text-xs font-bold transition-all ${selectedSize === size
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border text-foreground hover:border-foreground"
+                  {product.sizes.map((size) => {
+                    const stockObj = product.sizesWithStock?.find((s: any) => s.size === size);
+                    const isOutOfStock = stockObj ? stockObj.quantity <= 0 : false;
+                    return (
+                      <button
+                        key={size}
+                        disabled={isOutOfStock}
+                        onClick={() => setSelectedSize(size)}
+                        className={`w-12 h-12 rounded-full border text-xs font-bold transition-all relative ${
+                          selectedSize === size
+                            ? "border-foreground bg-foreground text-background"
+                            : isOutOfStock
+                            ? "border-dashed border-red-200 text-gray-400 bg-gray-50/50 cursor-not-allowed"
+                            : "border-border text-foreground hover:border-foreground"
                         }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                        title={isOutOfStock ? "Out of Stock" : undefined}
+                      >
+                        {size}
+                        {isOutOfStock && (
+                          <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+                            <div className="w-16 h-[1.5px] bg-red-400 rotate-45 transform origin-center"></div>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {selectedSize && (() => {
+                  const stockObj = product.sizesWithStock?.find((s: any) => s.size === selectedSize);
+                  if (stockObj && stockObj.quantity > 0 && stockObj.quantity <= 5) {
+                    return (
+                      <div className="flex items-center gap-2 mt-2 text-xs font-bold text-red-500 animate-pulse">
+                        <span>Only {stockObj.quantity} left in stock - order soon!</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
 
@@ -275,7 +302,7 @@ const ProductDetailPage = () => {
                   className="flex-1 px-4 py-4 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground font-medium"
                   maxLength={6}
                 />
-                <button 
+                <button
                   onClick={handleCheckPincode}
                   disabled={isChecking}
                   className="px-8 text-[10px] font-bold tracking-widest text-primary hover:bg-background/50 transition-colors disabled:opacity-50 animate-pulse-once"

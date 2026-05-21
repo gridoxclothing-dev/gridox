@@ -20,6 +20,15 @@ interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: string;
+  expectedDeliveryDate?: string;
+  statusDates?: {
+    placed?: string;
+    paymentVerified?: string;
+    packed?: string;
+    shipped?: string;
+    outForDelivery?: string;
+    delivered?: string;
+  };
   createdAt: string;
   address: {
     name: string;
@@ -36,6 +45,31 @@ const OrdersPage = () => {
   const [error, setError] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const navigate = useNavigate();
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to cancel this order?")) return;
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Order cancelled successfully");
+        
+        // Update both lists
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'Cancelled' } : o));
+        setSelectedOrder(prev => prev && prev._id === orderId ? { ...prev, status: 'Cancelled' } : prev);
+      } else {
+        toast.error(data.message || "Failed to cancel order");
+      }
+    } catch (err) {
+      toast.error("Error cancelling order");
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -88,20 +122,7 @@ const OrdersPage = () => {
           <h1 className="text-xl font-bold text-gray-800">My Orders</h1>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="p-4 md:px-6 flex flex-col md:flex-row gap-3 border-b border-border/10 bg-background/50">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input
-              type="text"
-              placeholder="Search your orders..."
-              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/60 font-body"
-            />
-          </div>
-          <button className="flex items-center justify-center px-6 py-2.5 bg-card border border-border/30 rounded-xl gap-2 text-sm font-bold text-foreground/80 hover:bg-background hover:text-primary transition-all shadow-sm">
-            <SlidersHorizontal size={16} /> Filters
-          </button>
-        </div>
+
 
         {error ? (
           <div className="p-12 text-center text-red-500">
@@ -154,16 +175,9 @@ const OrdersPage = () => {
                   <div className="px-4 pb-4 md:px-6 md:pb-6 flex items-center justify-between">
                     <div className="flex gap-4">
                       <button className="text-xs font-bold text-primary hover:underline">Track Order</button>
-                      <button className="text-xs font-bold text-gray-500 hover:underline">Need Help?</button>
+
                     </div>
-                    {order.status !== 'Pending' && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">Rate product:</span>
-                        <div className="flex gap-0.5">
-                          {[1, 2, 3, 4, 5].map(star => <Star key={star} size={14} className="text-gray-200 hover:text-amber-400 cursor-pointer transition-colors" />)}
-                        </div>
-                      </div>
-                    )}
+
                   </div>
                 </div>
               ))
@@ -227,46 +241,174 @@ const OrdersPage = () => {
                 <div className="flex justify-between items-start mb-8">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <h3 className="text-xl font-black text-gray-900">{selectedOrder.status}</h3>
+                      <div className={`w-2.5 h-2.5 rounded-full ${selectedOrder.status === 'Cancelled' ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></div>
+                      <h3 className={`text-xl font-black ${selectedOrder.status === 'Cancelled' ? 'text-red-600' : 'text-gray-900'}`}>{selectedOrder.status || 'Pending'}</h3>
                     </div>
                     <p className="text-sm text-gray-500 font-medium">
-                      {selectedOrder.status === 'Pending' ? 'Your order is confirmed and being prepared.' : 'Your order is on the way.'}
+                      {selectedOrder.status === 'Cancelled' 
+                        ? 'This order has been cancelled.' 
+                        : selectedOrder.status === 'Pending' 
+                          ? 'Your order is confirmed and being prepared.' 
+                          : 'Your order is on the way.'}
                     </p>
+                    {selectedOrder.expectedDeliveryDate && selectedOrder.status !== 'Cancelled' && (
+                      <p className="text-xs text-primary font-bold mt-2">
+                        {selectedOrder.status === 'Delivered' ? '🎉 Delivered on: ' : '📅 Expected Delivery: '} 
+                        {new Date(selectedOrder.expectedDeliveryDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    )}
                   </div>
-                  <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">On Track</span>
+                  <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${
+                    selectedOrder.status === 'Cancelled' 
+                      ? 'bg-red-100 text-red-700' 
+                      : 'bg-green-100 text-green-700'
+                  }`}>
+                    {selectedOrder.status === 'Cancelled' ? 'Cancelled' : 'On Track'}
+                  </span>
                 </div>
 
-                <div className="relative mt-4 mb-4 ml-2">
-                  <div className="absolute left-[9px] top-0 bottom-0 w-[2px] bg-gray-100"></div>
-                  <div className="absolute left-[9px] top-0 h-[50%] w-[2px] bg-green-500"></div>
-
-                  <div className="relative flex items-start gap-4 mb-10">
-                    <div className="bg-white ring-4 ring-white z-10"><CheckCircle2 size={20} className="text-green-500 fill-white" /></div>
-                    <div className="flex-1 -mt-0.5">
-                      <p className="text-sm font-bold text-gray-900">Order Confirmed</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{orderDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
-                    </div>
+                {selectedOrder.status === 'Cancelled' ? (
+                  <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-center text-red-600 text-sm font-medium">
+                    This order was cancelled. Please contact support if you have questions.
                   </div>
+                ) : (
+                  <div className="relative mt-6 mb-4 ml-2">
+                    {/* Gray background line */}
+                    <div className="absolute left-[15px] top-2 bottom-2 w-[2px] bg-gray-100"></div>
+                    
+                    {/* Green active progress line */}
+                    {(() => {
+                      const getStatusIndex = (status: string) => {
+                        const s = status || 'Pending';
+                        if (s === 'Pending') return 0;
+                        if (s === 'Confirmed' || s === 'Payment Verified') return 1;
+                        if (s === 'Packed') return 2;
+                        if (s === 'Shipped') return 3;
+                        if (s === 'Out for Delivery') return 4;
+                        if (s === 'Delivered') return 5;
+                        return 0;
+                      };
+                      const currentStepIndex = getStatusIndex(selectedOrder.status);
+                      
+                      const getShippedDesc = () => {
+                        if (selectedOrder.expectedDeliveryDate) {
+                          try {
+                            const d = new Date(selectedOrder.expectedDeliveryDate);
+                            return `Expected on ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+                          } catch (e) {
+                            return `Expected on ${selectedOrder.expectedDeliveryDate}`;
+                          }
+                        }
+                        return 'Expected in 2-3 days.';
+                      };
 
-                  <div className="relative flex items-start gap-4 mb-10">
-                    <div className="bg-white ring-4 ring-white z-10">
-                      {selectedOrder.status !== 'Pending' ? <CheckCircle2 size={20} className="text-green-500 fill-white" /> : <Circle size={20} className="text-gray-200 fill-white" />}
-                    </div>
-                    <div className="flex-1 -mt-0.5">
-                      <p className="text-sm font-bold text-gray-900">Shipped</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Expected in 2-3 days</p>
-                    </div>
-                  </div>
+                      const getDeliveredDesc = () => {
+                        if (selectedOrder.expectedDeliveryDate) {
+                          try {
+                            const d = new Date(selectedOrder.expectedDeliveryDate);
+                            return `Delivered on ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+                          } catch (e) {
+                            return `Delivered on ${selectedOrder.expectedDeliveryDate}`;
+                          }
+                        }
+                        return 'Delivered successfully!';
+                      };
 
-                  <div className="relative flex items-start gap-4">
-                    <div className="bg-white ring-4 ring-white z-10"><Circle size={20} className="text-gray-100 fill-white" /></div>
-                    <div className="flex-1 -mt-0.5">
-                      <p className="text-sm font-bold text-gray-400">Delivery</p>
-                      <p className="text-xs text-gray-300 mt-0.5">Estimated by {new Date(orderDate.getTime() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                    </div>
+                      const formatDate = (dateStr?: string, defaultText: string = '') => {
+                        if (!dateStr) return defaultText;
+                        try {
+                          const d = new Date(dateStr);
+                          return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                        } catch (e) {
+                          return dateStr;
+                        }
+                      };
+
+                      const steps = [
+                        { 
+                          label: 'Order Placed', 
+                          emoji: '✅', 
+                          desc: selectedOrder.statusDates?.placed 
+                            ? `Confirmed on ${formatDate(selectedOrder.statusDates.placed)}` 
+                            : `Confirmed on ${orderDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}` 
+                        },
+                        { 
+                          label: 'Payment Verified', 
+                          emoji: '✅', 
+                          desc: selectedOrder.statusDates?.paymentVerified 
+                            ? `Payment verified on ${formatDate(selectedOrder.statusDates.paymentVerified)}` 
+                            : 'Payment received and verified.' 
+                        },
+                        { 
+                          label: 'Packed', 
+                          emoji: '✅', 
+                          desc: selectedOrder.statusDates?.packed 
+                            ? `Your order was packed on ${formatDate(selectedOrder.statusDates.packed)}` 
+                            : 'Your order is packed and ready.' 
+                        },
+                        { 
+                          label: 'Shipped', 
+                          emoji: '🚚', 
+                          desc: selectedOrder.statusDates?.shipped 
+                            ? `Shipped on ${formatDate(selectedOrder.statusDates.shipped)}` 
+                            : getShippedDesc() 
+                        },
+                        { 
+                          label: 'Out for Delivery', 
+                          emoji: '📍', 
+                          desc: selectedOrder.statusDates?.outForDelivery 
+                            ? `Out for delivery on ${formatDate(selectedOrder.statusDates.outForDelivery)}` 
+                            : 'Delivery partner is on the way.' 
+                        },
+                        { 
+                          label: 'Delivered', 
+                          emoji: '🎉', 
+                          desc: selectedOrder.statusDates?.delivered 
+                            ? `Delivered on ${formatDate(selectedOrder.statusDates.delivered)}` 
+                            : getDeliveredDesc() 
+                        }
+                      ];
+
+                      return (
+                        <>
+                          <div 
+                            className="absolute left-[15px] top-2 w-[2px] bg-green-500 transition-all duration-500"
+                            style={{ height: `${(currentStepIndex / 5) * 100}%` }}
+                          ></div>
+
+                          {steps.map((step, idx) => {
+                            const isCompleted = idx <= currentStepIndex;
+                            const isCurrent = idx === currentStepIndex;
+
+                            return (
+                              <div key={idx} className="relative flex items-start gap-4 mb-8 last:mb-0">
+                                <div 
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center bg-white border-2 z-10 transition-all duration-300 ${
+                                    isCompleted 
+                                      ? 'border-green-500 shadow-sm scale-110 bg-green-50' 
+                                      : 'border-gray-200'
+                                  }`}
+                                >
+                                  <span style={{ fontSize: '15px', filter: isCompleted ? 'none' : 'grayscale(100%) opacity(40%)' }}>
+                                    {step.emoji}
+                                  </span>
+                                </div>
+                                <div className="flex-1 -mt-0.5">
+                                  <p className={`text-sm font-bold transition-colors ${isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
+                                    {step.label}
+                                  </p>
+                                  <p className={`text-xs mt-0.5 transition-colors ${isCompleted ? 'text-gray-600' : 'text-gray-300'}`}>
+                                    {step.desc}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
                   </div>
-                </div>
+                )}
 
                 <div className="mt-8 p-4 bg-primary/5 rounded-2xl flex gap-3 items-start border border-primary/10">
                   <Package size={20} className="text-primary shrink-0" />
@@ -323,8 +465,22 @@ const OrdersPage = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg shadow-gray-200">Download Invoice</button>
-                <button className="w-full py-4 bg-white text-gray-900 border-2 border-gray-900 rounded-2xl font-bold hover:bg-gray-50 transition-all">Cancel Order</button>
+                {selectedOrder.status === 'Cancelled' ? (
+                  <div className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-bold border border-red-200 text-center text-sm shadow-sm">
+                    ❌ This order has been Cancelled
+                  </div>
+                ) : ['Packed', 'Shipped', 'Out for Delivery', 'Delivered'].includes(selectedOrder.status) ? (
+                  <div className="w-full p-4 bg-gray-50 text-gray-500 rounded-2xl border border-gray-200 text-center text-xs font-semibold leading-relaxed">
+                    🔒 This order is <strong>{selectedOrder.status.toLowerCase()}</strong> and cannot be cancelled anymore.
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => handleCancelOrder(selectedOrder._id)}
+                    className="w-full py-4 bg-white text-red-600 border-2 border-red-600 rounded-2xl font-bold hover:bg-red-50 hover:border-red-700 hover:text-red-700 transition-all text-sm"
+                  >
+                    Cancel Order
+                  </button>
+                )}
               </div>
             </div>
           </div>

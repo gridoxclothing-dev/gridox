@@ -26,6 +26,7 @@ interface Product {
   image: string;
   gallery: string[];
   sizes: string[];
+  sizesWithStock?: { size: string; quantity: number }[];
   details: string;
   category: string[];
   isCuratedLook?: boolean;
@@ -57,12 +58,12 @@ interface Announcement {
 }
 
 const App = () => {
-  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'announcements'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'cancelled_orders' | 'announcements'>('banners');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [status, setStatus] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  
+
   const [banners, setBanners] = useState<Banner[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,9 +72,40 @@ const App = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingStockProductId, setEditingStockProductId] = useState<string | null>(null);
+  const [tempStock, setTempStock] = useState<{ size: string; quantity: number }[]>([]);
+
+  const handleSaveInlineStock = async (productId: string) => {
+    try {
+      setIsLoading(true);
+      // Filter out sizes that are checked (quantity > 0 or present in tempStock)
+      const newSizes = tempStock.map(s => s.size);
+
+      const res = await fetch(`${API_BASE}/api/products/${productId}/stock`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sizes: newSizes,
+          sizesWithStock: tempStock
+        })
+      });
+
+      if (res.ok) {
+        showStatus('Stock updated successfully!');
+        setEditingStockProductId(null);
+        fetchProducts(); // Refresh list to get new stock
+      } else {
+        showStatus('Failed to update stock', 'error');
+      }
+    } catch (err) {
+      showStatus('Error saving stock', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
-  
+
   // Product Form State
   const [productForm, setProductForm] = useState({
     name: '',
@@ -83,6 +115,7 @@ const App = () => {
     image: '',
     gallery: [] as string[],
     sizes: [] as string[],
+    sizesWithStock: [] as { size: string; quantity: number }[],
     details: '',
     category: [] as string[],
     isNewArrival: false,
@@ -150,6 +183,48 @@ const App = () => {
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+    }
+  };
+
+  const handleUpdateOrderDate = async (orderId: string, milestone: string, dateStr: string) => {
+    // Optimistic update locally to prevent focus loss!
+    setOrders(prevOrders => prevOrders.map(o => 
+      o._id === orderId 
+        ? { ...o, statusDates: { ...(o.statusDates || {}), [milestone]: dateStr } }
+        : o
+    ));
+
+    // Only save when the date is fully cleared OR contains a completed 4-digit year (between 2020 and 2100)
+    const isComplete = !dateStr || (() => {
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return false;
+      const year = parseInt(parts[0], 10);
+      return year >= 2020 && year <= 2100;
+    })();
+
+    if (!isComplete) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          statusDates: {
+            [milestone]: dateStr
+          }
+        })
+      });
+      if (res.ok) {
+        showStatus('Order milestone date saved!');
+        // Do NOT call fetchOrders() here. 
+        // Calling it recreates the array and steals focus from the input while typing!
+      } else {
+        showStatus('Failed to update milestone date', 'error');
+        fetchOrders(); // Revert to DB state on failure
+      }
+    } catch (err) {
+      showStatus('Error updating milestone date', 'error');
+      fetchOrders(); // Revert on failure
     }
   };
 
@@ -244,7 +319,7 @@ const App = () => {
         showStatus(`Upload failed: ${data.message || 'Unknown error'}`, 'error');
       }
     } catch (error: any) {
-       showStatus(`Connection error: ${error.message}`, 'error');
+      showStatus(`Connection error: ${error.message}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -413,7 +488,7 @@ const App = () => {
           canvas.width = TARGET_W;
           canvas.height = TARGET_H;
           const ctx = canvas.getContext('2d');
-          
+
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
@@ -453,7 +528,7 @@ const App = () => {
       const base64 = await standardizeNewArrival(file);
       setProductForm(prev => ({ ...prev, image: base64 }));
     } catch (error) {
-       showStatus('Error processing image.', 'error');
+      showStatus('Error processing image.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -531,6 +606,7 @@ const App = () => {
           image: fullProduct.image,
           gallery: fullProduct.gallery || [],
           sizes: fullProduct.sizes || [],
+          sizesWithStock: fullProduct.sizesWithStock || (fullProduct.sizes || []).map((sz: string) => ({ size: sz, quantity: 10 })),
           details: fullProduct.details || '',
           category: Array.isArray(fullProduct.category) ? fullProduct.category : (fullProduct.category ? [fullProduct.category] : []),
           isNewArrival: fullProduct.isNewArrival || false,
@@ -636,7 +712,7 @@ const App = () => {
   const handleReelVideoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     // Check file size (limit to 10MB for Base64 storage)
     if (file.size > 10 * 1024 * 1024) {
       showStatus('Video too large. Please keep under 10MB.', 'error');
@@ -714,9 +790,9 @@ const App = () => {
 
   const resetForms = () => {
     setEditingId(null);
-    setProductForm({ 
-      name: '', price: '', originalPrice: '', discount: '', image: '', 
-      gallery: [], sizes: [], details: '', category: [],
+    setProductForm({
+      name: '', price: '', originalPrice: '', discount: '', image: '',
+      gallery: [], sizes: [], sizesWithStock: [], details: '', category: [],
       isNewArrival: false, isBestSeller: false, isCuratedLook: false
     });
     setCategoryForm({ name: '', description: '', fullImage: '', thumbnailImage: '' });
@@ -727,7 +803,7 @@ const App = () => {
     <div className="admin-container">
       {/* Mobile Header */}
       <header className="mobile-header">
-        <div className="logo" style={{fontSize: '18px'}}>GRIDOX</div>
+        <div className="logo" style={{ fontSize: '18px' }}>GRIDOX</div>
         <button className="menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
           ☰
         </button>
@@ -739,17 +815,17 @@ const App = () => {
       {/* Sidebar */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="logo">
               GRIDOX
               <span>OWNER PORTAL</span>
             </div>
             {isMobileMenuOpen && (
-              <button className="menu-toggle" style={{background: 'transparent'}} onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+              <button className="menu-toggle" style={{ background: 'transparent' }} onClick={() => setIsMobileMenuOpen(false)}>✕</button>
             )}
           </div>
         </div>
-        
+
         <nav className="nav-menu">
           <ul>
             <li className={activeTab === 'banners' ? 'active' : ''} onClick={() => { setActiveTab('banners'); resetForms(); setIsMobileMenuOpen(false); }}>
@@ -773,6 +849,9 @@ const App = () => {
             <li className={activeTab === 'orders' ? 'active' : ''} onClick={() => { setActiveTab('orders'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">📦</span> Orders
             </li>
+            <li className={activeTab === 'cancelled_orders' ? 'active' : ''} onClick={() => { setActiveTab('cancelled_orders'); resetForms(); setIsMobileMenuOpen(false); }}>
+              <span className="icon">❌</span> Cancelled Orders
+            </li>
             <li className={activeTab === 'announcements' ? 'active' : ''} onClick={() => { setActiveTab('announcements'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">📢</span> Announcements
             </li>
@@ -782,9 +861,9 @@ const App = () => {
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="avatar">👤</div>
-            <div style={{display: 'flex', flexDirection: 'column'}}>
-              <span style={{fontSize: '13px', fontWeight: '600'}}>Admin Control</span>
-              <span style={{fontSize: '10px', color: '#94a3b8'}}>v2.0.4</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Control</span>
+              <span style={{ fontSize: '10px', color: '#94a3b8' }}>v2.0.4</span>
             </div>
           </div>
 
@@ -795,72 +874,72 @@ const App = () => {
       <main className="admin-main">
         {/* Page Header */}
         <div className="page-header">
-            <div className="page-title">
-                <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
-                <p>Manage your storefront content and inventory.</p>
-            </div>
-            {isLoading && <div className="spinner"></div>}
+          <div className="page-title">
+            <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+            <p>Manage your storefront content and inventory.</p>
+          </div>
+          {isLoading && <div className="spinner"></div>}
         </div>
 
         {activeTab === 'banners' && (
           <div className="fade-in">
-             <div className="content-grid">
-                <div className="upload-options-card">
-                    <div className="upload-option" onClick={() => {
-                       const input = document.createElement('input');
-                       input.type = 'file';
-                       input.accept = 'image/*';
-                       input.onchange = (e) => handleBannerUpload(e as any, 'imageUrl');
-                       input.click();
-                    }}>
-                        <span className="icon">💻</span>
-                        <p>New Desktop Banner</p>
-                        <span className="size-hint">1920 x 800 px</span>
-                    </div>
-                    <div className="upload-option mobile" onClick={() => {
-                       const input = document.createElement('input');
-                       input.type = 'file';
-                       input.accept = 'image/*';
-                       input.onchange = (e) => handleBannerUpload(e as any, 'mobileImageUrl');
-                       input.click();
-                    }}>
-                        <span className="icon">📱</span>
-                        <p>New Mobile Banner</p>
-                        <span className="size-hint">1080 x 1440 px</span>
-                    </div>
+            <div className="content-grid">
+              <div className="upload-options-card">
+                <div className="upload-option" onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => handleBannerUpload(e as any, 'imageUrl');
+                  input.click();
+                }}>
+                  <span className="icon">💻</span>
+                  <p>New Desktop Banner</p>
+                  <span className="size-hint">1920 x 800 px</span>
                 </div>
-                {banners.map(banner => (
-                    <div key={banner._id} className="item-card banner-card">
-                        <div className="banner-split-view">
-                          <div className="view-half">
-                            <div className="item-image" style={{backgroundImage: `url("${banner.imageUrl}")`}}></div>
-                            <div className="view-label">DESKTOP</div>
-                            <button className="change-btn" onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.onchange = (e) => handleBannerUpload(e as any, 'imageUrl', banner._id);
-                                input.click();
-                            }}>Change</button>
-                          </div>
-                          <div className="view-half">
-                            <div className="item-image mobile" style={{backgroundImage: `url("${banner.mobileImageUrl || banner.imageUrl}")`}}></div>
-                            <div className="view-label">MOBILE</div>
-                            <button className="change-btn" onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.onchange = (e) => handleBannerUpload(e as any, 'mobileImageUrl', banner._id);
-                                input.click();
-                            }}>Change</button>
-                          </div>
-                        </div>
-                        <div className="card-actions" style={{marginTop: 'auto', borderTop: '1px solid #f1f5f9'}}>
-                            <button className="btn-icon delete" onClick={() => handleDeleteBanner(banner._id)}>Remove Banner</button>
-                        </div>
+                <div className="upload-option mobile" onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => handleBannerUpload(e as any, 'mobileImageUrl');
+                  input.click();
+                }}>
+                  <span className="icon">📱</span>
+                  <p>New Mobile Banner</p>
+                  <span className="size-hint">1080 x 1440 px</span>
+                </div>
+              </div>
+              {banners.map(banner => (
+                <div key={banner._id} className="item-card banner-card">
+                  <div className="banner-split-view">
+                    <div className="view-half">
+                      <div className="item-image" style={{ backgroundImage: `url("${banner.imageUrl}")` }}></div>
+                      <div className="view-label">DESKTOP</div>
+                      <button className="change-btn" onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => handleBannerUpload(e as any, 'imageUrl', banner._id);
+                        input.click();
+                      }}>Change</button>
                     </div>
-                ))}
-             </div>
+                    <div className="view-half">
+                      <div className="item-image mobile" style={{ backgroundImage: `url("${banner.mobileImageUrl || banner.imageUrl}")` }}></div>
+                      <div className="view-label">MOBILE</div>
+                      <button className="change-btn" onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => handleBannerUpload(e as any, 'mobileImageUrl', banner._id);
+                        input.click();
+                      }}>Change</button>
+                    </div>
+                  </div>
+                  <div className="card-actions" style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9' }}>
+                    <button className="btn-icon delete" onClick={() => handleDeleteBanner(banner._id)}>Remove Banner</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -869,50 +948,50 @@ const App = () => {
             <div className="glass-card">
               <h2 className="form-section-title">{editingId ? 'Edit Category' : 'Create New Category'}</h2>
               <form onSubmit={handleAddCategory}>
-                  <div className="form-grid">
-                    <div className="upload-zone" onClick={() => categoryThumbInputRef.current?.click()}>
-                        {categoryForm.thumbnailImage ? (
-                            <img src={categoryForm.thumbnailImage} className="preview-full" alt="Preview" />
-                        ) : (
-                            <div className="upload-placeholder">
-                                <span className="icon">📁</span>
-                                <p>Category Image</p>
-                                <p className="upload-hint">(Recommended: 600x900 Portrait)</p>
-                            </div>
-                        )}
-                        <input type="file" ref={categoryThumbInputRef} onChange={handleCategoryThumbImageSelect} style={{display:'none'}} accept="image/*" />
-                    </div>
-                    <div className="form-controls">
-                        <div className="form-group">
-                            <label>Category Name</label>
-                            <input className="input-styled" type="text" value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} placeholder="e.g. LUXURY CO-ORDS" required />
-                        </div>
-                        <div className="form-group">
-                            <label>Description (SEO)</label>
-                            <textarea className="input-styled" value={categoryForm.description} onChange={e => setCategoryForm({...categoryForm, description: e.target.value})} placeholder="Describe this category..." required />
-                        </div>
-                        <button type="submit" disabled={isLoading} className="primary-btn">
-                            {editingId ? 'Update Category' : 'Save Category'}
-                        </button>
-                        {editingId && <button type="button" onClick={resetForms} className="secondary-btn">Cancel Edit</button>}
-                    </div>
+                <div className="form-grid">
+                  <div className="upload-zone" onClick={() => categoryThumbInputRef.current?.click()}>
+                    {categoryForm.thumbnailImage ? (
+                      <img src={categoryForm.thumbnailImage} className="preview-full" alt="Preview" />
+                    ) : (
+                      <div className="upload-placeholder">
+                        <span className="icon">📁</span>
+                        <p>Category Image</p>
+                        <p className="upload-hint">(Recommended: 600x900 Portrait)</p>
+                      </div>
+                    )}
+                    <input type="file" ref={categoryThumbInputRef} onChange={handleCategoryThumbImageSelect} style={{ display: 'none' }} accept="image/*" />
                   </div>
+                  <div className="form-controls">
+                    <div className="form-group">
+                      <label>Category Name</label>
+                      <input className="input-styled" type="text" value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="e.g. LUXURY CO-ORDS" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Description (SEO)</label>
+                      <textarea className="input-styled" value={categoryForm.description} onChange={e => setCategoryForm({ ...categoryForm, description: e.target.value })} placeholder="Describe this category..." required />
+                    </div>
+                    <button type="submit" disabled={isLoading} className="primary-btn">
+                      {editingId ? 'Update Category' : 'Save Category'}
+                    </button>
+                    {editingId && <button type="button" onClick={resetForms} className="secondary-btn">Cancel Edit</button>}
+                  </div>
+                </div>
               </form>
             </div>
 
             <div className="content-grid">
-                {categories.map(cat => (
-                    <div key={cat._id} className="item-card">
-                        <div className="item-image" style={{backgroundImage: `url("${cat.thumbnailImage || cat.image}")`}}></div>
-                        <div className="item-body">
-                            <h3>{cat.name}</h3>
-                        </div>
-                        <div className="card-actions">
-                            <button className="btn-icon edit" onClick={() => handleEditCategory(cat)}>Edit</button>
-                            <button className="btn-icon delete" onClick={() => handleDeleteCategory(cat._id)}>Delete</button>
-                        </div>
-                    </div>
-                ))}
+              {categories.map(cat => (
+                <div key={cat._id} className="item-card">
+                  <div className="item-image" style={{ backgroundImage: `url("${cat.thumbnailImage || cat.image}")` }}></div>
+                  <div className="item-body">
+                    <h3>{cat.name}</h3>
+                  </div>
+                  <div className="card-actions">
+                    <button className="btn-icon edit" onClick={() => handleEditCategory(cat)}>Edit</button>
+                    <button className="btn-icon delete" onClick={() => handleDeleteCategory(cat._id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -920,139 +999,297 @@ const App = () => {
         {activeTab === 'dresses' && (
           <div className="fade-in">
             <div className="glass-card">
-                <h2 className="form-section-title">{editingId ? 'Edit Dress Details' : 'Add New Dress to Collection'}</h2>
-                <form onSubmit={handleAddProduct}>
-                    <div className="form-grid">
-                        <div className="image-side">
-                            <div className="upload-zone" onClick={() => productInputRef.current?.click()}>
-                                {productForm.image ? (
-                                    <img src={productForm.image} className="preview-full" alt="Main" />
-                                ) : (
-                                    <div className="upload-placeholder">
-                                        <span className="icon">📷</span>
-                                        <p>Main Portrait Image</p>
-                                        <p className="upload-hint">(Ideal: 1200x1600)</p>
-                                    </div>
-                                )}
-                                <input type="file" ref={productInputRef} onChange={handleProductImageSelect} style={{display:'none'}} accept="image/*" />
-                            </div>
-                            <div className="gallery-row">
-                                {[0,1,2,3,4].map(i => (
-                                    <div key={i} className="gallery-box">
-                                        {productForm.gallery[i] ? <img src={productForm.gallery[i]} /> : '+'}
-                                    </div>
-                                ))}
-                                <button type="button" onClick={() => galleryInputRef.current?.click()} className="mini-btn">Upload Looks</button>
-                                <input type="file" ref={galleryInputRef} onChange={handleGalleryImagesSelect} multiple style={{display:'none'}} />
-                            </div>
+              <h2 className="form-section-title">{editingId ? 'Edit Dress Details' : 'Add New Dress to Collection'}</h2>
+              <form onSubmit={handleAddProduct}>
+                <div className="form-grid">
+                  <div className="image-side">
+                    <div className="upload-zone" onClick={() => productInputRef.current?.click()}>
+                      {productForm.image ? (
+                        <img src={productForm.image} className="preview-full" alt="Main" />
+                      ) : (
+                        <div className="upload-placeholder">
+                          <span className="icon">📷</span>
+                          <p>Main Portrait Image</p>
+                          <p className="upload-hint">(Ideal: 1200x1600)</p>
                         </div>
-
-                        <div className="form-side">
-                            <div className="form-group">
-                                <label>Dress Name</label>
-                                <input className="input-styled" type="text" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} placeholder="Dress name" required />
-                            </div>
-                            <div className="price-row">
-                                <div className="form-group">
-                                    <label>Price (Rs.)</label>
-                                    <input className="input-styled" type="number" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>Old Price</label>
-                                    <input className="input-styled" type="number" value={productForm.originalPrice} onChange={e => setProductForm({...productForm, originalPrice: e.target.value})} />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Categories</label>
-                                <div className="size-pills-container">
-                                    {categories.map(c => (
-                                        <div key={c._id} className="size-pill">
-                                            <input 
-                                                type="checkbox" 
-                                                id={`cat-${c._id}`}
-                                                checked={productForm.category.includes(c.slug)} 
-                                                onChange={e => {
-                                                    const newCats = e.target.checked 
-                                                        ? [...productForm.category, c.slug] 
-                                                        : productForm.category.filter(s => s !== c.slug);
-                                                    setProductForm({...productForm, category: newCats});
-                                                }} 
-                                            />
-                                            <label htmlFor={`cat-${c._id}`}>{c.name}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Sizes</label>
-                                <div className="size-pills-container">
-                                    {['XS','S','M','L','XL','XXL','3XL'].map(sz => (
-                                        <div key={sz} className="size-pill">
-                                            <input 
-                                                type="checkbox" 
-                                                id={`size-${sz}`}
-                                                checked={productForm.sizes.includes(sz)} 
-                                                onChange={e => {
-                                                    const newSizes = e.target.checked ? [...productForm.sizes, sz] : productForm.sizes.filter(s => s !== sz);
-                                                    setProductForm({...productForm, sizes: newSizes});
-                                                }} 
-                                            />
-                                            <label htmlFor={`size-${sz}`}>{sz}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                      )}
+                      <input type="file" ref={productInputRef} onChange={handleProductImageSelect} style={{ display: 'none' }} accept="image/*" />
+                    </div>
+                    <div className="gallery-row">
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <div key={i} className="gallery-box">
+                          {productForm.gallery[i] ? <img src={productForm.gallery[i]} /> : '+'}
                         </div>
+                      ))}
+                      <button type="button" onClick={() => galleryInputRef.current?.click()} className="mini-btn">Upload Looks</button>
+                      <input type="file" ref={galleryInputRef} onChange={handleGalleryImagesSelect} multiple style={{ display: 'none' }} />
                     </div>
+                  </div>
 
-                    <div className="form-group" style={{marginTop:'25px'}}>
-                        <label>Product Details (Rich Text)</label>
-                        <textarea className="input-styled" value={productForm.details} onChange={e => setProductForm({...productForm, details: e.target.value})} placeholder="Fabric, fit, care instructions..." />
+                  <div className="form-side">
+                    <div className="form-group">
+                      <label>Dress Name</label>
+                      <input className="input-styled" type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} placeholder="Dress name" required />
                     </div>
-
-                    <div className="flags-container">
-                        <label className="flag-item">
-                            <input type="checkbox" checked={productForm.isNewArrival} onChange={e => setProductForm({...productForm, isNewArrival: e.target.checked})} />
-                            New Arrival 🌟
-                        </label>
-                        <label className="flag-item">
-                            <input type="checkbox" checked={productForm.isBestSeller} onChange={e => setProductForm({...productForm, isBestSeller: e.target.checked})} />
-                            Best Seller 🔥
-                        </label>
-                        <label className="flag-item">
-                            <input type="checkbox" checked={productForm.isCuratedLook} onChange={e => setProductForm({...productForm, isCuratedLook: e.target.checked})} />
-                            Curated Look ✨
-                        </label>
+                    <div className="price-row">
+                      <div className="form-group">
+                        <label>Price (Rs.)</label>
+                        <input className="input-styled" type="number" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} required />
+                      </div>
+                      <div className="form-group">
+                        <label>Old Price</label>
+                        <input className="input-styled" type="number" value={productForm.originalPrice} onChange={e => setProductForm({ ...productForm, originalPrice: e.target.value })} />
+                      </div>
                     </div>
+                    <div className="form-group">
+                      <label>Categories</label>
+                      <div className="size-pills-container">
+                        {categories.map(c => (
+                          <div key={c._id} className="size-pill">
+                            <input
+                              type="checkbox"
+                              id={`cat-${c._id}`}
+                              checked={productForm.category.includes(c.slug)}
+                              onChange={e => {
+                                const newCats = e.target.checked
+                                  ? [...productForm.category, c.slug]
+                                  : productForm.category.filter(s => s !== c.slug);
+                                setProductForm({ ...productForm, category: newCats });
+                              }}
+                            />
+                            <label htmlFor={`cat-${c._id}`}>{c.name}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Sizes & Stock Quantity</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                        {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map(sz => {
+                          const stockObj = productForm.sizesWithStock.find(item => item.size === sz);
+                          const isChecked = !!stockObj;
+                          const quantity = stockObj ? stockObj.quantity : 0;
+                          return (
+                            <div key={sz} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input
+                                  type="checkbox"
+                                  id={`size-${sz}`}
+                                  checked={isChecked}
+                                  onChange={e => {
+                                    let newSizesWithStock = [...productForm.sizesWithStock];
+                                    let newSizes = [...productForm.sizes];
+                                    if (e.target.checked) {
+                                      if (!newSizesWithStock.some(item => item.size === sz)) {
+                                        newSizesWithStock.push({ size: sz, quantity: 10 }); // default to 10
+                                      }
+                                      if (!newSizes.includes(sz)) {
+                                        newSizes.push(sz);
+                                      }
+                                    } else {
+                                      newSizesWithStock = newSizesWithStock.filter(item => item.size !== sz);
+                                      newSizes = newSizes.filter(s => s !== sz);
+                                    }
+                                    setProductForm({ ...productForm, sizes: newSizes, sizesWithStock: newSizesWithStock });
+                                  }}
+                                  style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                                />
+                                <label htmlFor={`size-${sz}`} style={{ fontSize: '13px', fontWeight: 600, margin: 0, textTransform: 'none', letterSpacing: 'normal', cursor: 'pointer', color: '#1e293b' }}>{sz}</label>
+                              </div>
+                              {isChecked && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ fontSize: '10px', color: '#64748b' }}>Stock:</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={quantity}
+                                    onChange={e => {
+                                      const qty = parseInt(e.target.value) || 0;
+                                      const newSizesWithStock = productForm.sizesWithStock.map(item =>
+                                        item.size === sz ? { ...item, quantity: qty } : item
+                                      );
+                                      setProductForm({ ...productForm, sizesWithStock: newSizesWithStock });
+                                    }}
+                                    style={{
+                                      width: '60px',
+                                      padding: '2px 4px',
+                                      border: '1px solid var(--border)',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      textAlign: 'center'
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                    <button type="submit" disabled={isLoading} className="primary-btn">
-                        {editingId ? 'Update Dress' : 'Publish Dress'}
-                    </button>
-                    {editingId && <button type="button" onClick={resetForms} className="secondary-btn">Cancel Edit</button>}
-                </form>
+                <div className="form-group" style={{ marginTop: '25px' }}>
+                  <label>Product Details (Rich Text)</label>
+                  <textarea className="input-styled" value={productForm.details} onChange={e => setProductForm({ ...productForm, details: e.target.value })} placeholder="Fabric, fit, care instructions..." />
+                </div>
+
+                <div className="flags-container">
+                  <label className="flag-item">
+                    <input type="checkbox" checked={productForm.isNewArrival} onChange={e => setProductForm({ ...productForm, isNewArrival: e.target.checked })} />
+                    New Arrival 🌟
+                  </label>
+                  <label className="flag-item">
+                    <input type="checkbox" checked={productForm.isBestSeller} onChange={e => setProductForm({ ...productForm, isBestSeller: e.target.checked })} />
+                    Best Seller 🔥
+                  </label>
+                  <label className="flag-item">
+                    <input type="checkbox" checked={productForm.isCuratedLook} onChange={e => setProductForm({ ...productForm, isCuratedLook: e.target.checked })} />
+                    Curated Look ✨
+                  </label>
+                </div>
+
+                <button type="submit" disabled={isLoading} className="primary-btn">
+                  {editingId ? 'Update Dress' : 'Publish Dress'}
+                </button>
+                {editingId && <button type="button" onClick={resetForms} className="secondary-btn">Cancel Edit</button>}
+              </form>
             </div>
 
-            <div className="content-grid">
-                {products.map(p => (
-                    <div key={p._id} className="item-card">
-                        <div className="item-image" style={{backgroundImage: `url("${p.image}")`}}>
-                            {p.category && (Array.isArray(p.category) ? p.category[0] : p.category) && (
-                                <span className="badge-tag">{Array.isArray(p.category) ? p.category[0] : p.category}</span>
-                            )}
-                        </div>
-                        <div className="item-body">
-                            <h3>{p.name}</h3>
-                            <div className="item-price">
-                                Rs. {p.price} 
-                                {p.originalPrice && <span className="old">Rs. {p.originalPrice}</span>}
-                            </div>
-                        </div>
-                        <div className="card-actions">
-                            <button className="btn-icon edit" onClick={() => handleEditProduct(p)}>Edit</button>
-                            <button className="btn-icon delete" onClick={() => handleDeleteProduct(p._id)}>Remove</button>
-                        </div>
+            <div className="content-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+              {products.map(p => {
+                const isEditingStock = editingStockProductId === p._id;
+                
+                return (
+                  <div key={p._id} className="item-card" style={{ paddingBottom: '12px' }}>
+                    <div className="item-image" style={{ backgroundImage: `url("${p.image}")` }}>
+                      {p.category && (Array.isArray(p.category) ? p.category[0] : p.category) && (
+                        <span className="badge-tag">{Array.isArray(p.category) ? p.category[0] : p.category}</span>
+                      )}
                     </div>
-                ))}
+                    <div className="item-body" style={{ flexGrow: 1 }}>
+                      <h3>{p.name}</h3>
+                      <div className="item-price">
+                        Rs. {p.price}
+                        {p.originalPrice && <span className="old">Rs. {p.originalPrice}</span>}
+                      </div>
+
+                      {/* Stock Details Panel */}
+                      <div style={{ marginTop: '14px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Sizes & Stock Quantity
+                          </span>
+                        </div>
+
+                        {isEditingStock ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map(sz => {
+                              const matchObj = tempStock.find(s => s.size === sz);
+                              const isActive = !!matchObj;
+                              const quantity = matchObj ? matchObj.quantity : 0;
+
+                              return (
+                                <div key={sz} style={{ background: '#f8fafc', padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                                  <label style={{ fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0 }}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isActive}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setTempStock(prev => [...prev, { size: sz, quantity: 10 }]);
+                                        } else {
+                                          setTempStock(prev => prev.filter(s => s.size !== sz));
+                                        }
+                                      }}
+                                    />
+                                    {sz}
+                                  </label>
+                                  {isActive && (
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      value={quantity}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10) || 0;
+                                        setTempStock(prev => prev.map(s => s.size === sz ? { ...s, quantity: val } : s));
+                                      }}
+                                      style={{ width: '45px', fontSize: '11px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', color: '#0f172a', background: '#ffffff', backgroundColor: '#ffffff' }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map(sz => {
+                              const stockObj = p.sizesWithStock?.find((s: any) => s.size === sz);
+                              const hasSize = p.sizes?.includes(sz) || !!stockObj;
+                              const quantity = stockObj ? stockObj.quantity : 0;
+
+                              return (
+                                <span 
+                                  key={sz} 
+                                  style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    padding: '3px 6px', 
+                                    borderRadius: '4px', 
+                                    fontSize: '10px', 
+                                    fontWeight: 700,
+                                    background: hasSize ? (quantity <= 5 ? '#fef2f2' : '#f0fdf4') : '#f8fafc',
+                                    color: hasSize ? (quantity <= 5 ? '#ef4444' : '#166534') : '#94a3b8',
+                                    border: `1px solid ${hasSize ? (quantity <= 5 ? '#fee2e2' : '#bbf7d0') : '#e2e8f0'}`
+                                  }}
+                                >
+                                  {sz}: {hasSize ? quantity : '-'}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="card-actions" style={{ display: 'flex', gap: '6px', padding: '12px 16px 4px 16px', borderTop: '1px solid #f1f5f9' }}>
+                      {isEditingStock ? (
+                        <>
+                          <button 
+                            className="btn-icon edit" 
+                            style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', flex: 1 }}
+                            onClick={() => handleSaveInlineStock(p._id)}
+                          >
+                            Save Stock
+                          </button>
+                          <button 
+                            className="btn-icon delete" 
+                            style={{ background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', flex: 1 }}
+                            onClick={() => setEditingStockProductId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            className="btn-icon edit" 
+                            onClick={() => {
+                              setEditingStockProductId(p._id);
+                              setTempStock(p.sizesWithStock || []);
+                            }}
+                            style={{ background: '#0f172a', color: '#fff' }}
+                          >
+                            ✏️ Stock
+                          </button>
+                          <button className="btn-icon edit" onClick={() => handleEditProduct(p)}>Edit</button>
+                          <button className="btn-icon delete" onClick={() => handleDeleteProduct(p._id)}>Remove</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1064,11 +1301,11 @@ const App = () => {
               <form onSubmit={handleAddReel}>
                 <div className="form-grid">
                   <div className="upload-zone" onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'video/mp4,video/quicktime';
-                      input.onchange = (e) => handleReelVideoSelect(e as any);
-                      input.click();
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'video/mp4,video/quicktime';
+                    input.onchange = (e) => handleReelVideoSelect(e as any);
+                    input.click();
                   }}>
                     {reelForm.videoUrl ? (
                       <video className="preview-full" src={reelForm.videoUrl} autoPlay loop muted />
@@ -1076,24 +1313,24 @@ const App = () => {
                       <div className="upload-placeholder">
                         <span className="icon">🎥</span>
                         <p>Upload Video (MP4/MOV)</p>
-                        <p style={{fontSize: '10px', marginTop: '5px'}}>Max size 10MB</p>
+                        <p style={{ fontSize: '10px', marginTop: '5px' }}>Max size 10MB</p>
                       </div>
                     )}
                   </div>
                   <div className="form-controls">
                     <div className="form-group">
                       <label>Select Category</label>
-                      <select className="select-styled" value={reelForm.category} onChange={e => setReelForm({...reelForm, category: e.target.value, productId: ''})} required>
+                      <select className="select-styled" value={reelForm.category} onChange={e => setReelForm({ ...reelForm, category: e.target.value, productId: '' })} required>
                         <option value="">Choose category</option>
                         {categories.map(c => <option key={c._id} value={c.slug}>{c.name}</option>)}
                       </select>
                     </div>
                     <div className="form-group">
                       <label>Link Dress</label>
-                      <select 
-                        className="select-styled" 
-                        value={reelForm.productId} 
-                        onChange={e => setReelForm({...reelForm, productId: e.target.value})} 
+                      <select
+                        className="select-styled"
+                        value={reelForm.productId}
+                        onChange={e => setReelForm({ ...reelForm, productId: e.target.value })}
                         required
                       >
                         <option value="">{reelForm.category ? 'Select a dress...' : 'Choose category first'}</option>
@@ -1122,112 +1359,439 @@ const App = () => {
 
         {activeTab === 'instagram' && (
           <div className="fade-in">
-             <div className="content-grid">
-                <div className="upload-zone" onClick={() => {
-                   const input = document.createElement('input');
-                   input.type = 'file';
-                   input.accept = 'image/*';
-                   input.onchange = (e) => handleInstagramUpload(e as any);
-                   input.click();
-                }}>
-                    <div className="upload-placeholder">
-                        <span className="icon">📸</span>
-                        <p>Upload Instagram Post</p>
-                        <p className="upload-hint">(Ideal: 1080x1080 Square)</p>
-                    </div>
+            <div className="content-grid">
+              <div className="upload-zone" onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => handleInstagramUpload(e as any);
+                input.click();
+              }}>
+                <div className="upload-placeholder">
+                  <span className="icon">📸</span>
+                  <p>Upload Instagram Post</p>
+                  <p className="upload-hint">(Ideal: 1080x1080 Square)</p>
                 </div>
-                {instagramPosts.map(post => (
-                    <div key={post._id} className="item-card">
-                        <div className="item-image" style={{backgroundImage: `url("${post.imageUrl}")`}}></div>
-                        <div className="card-actions">
-                            <button className="btn-icon delete" onClick={() => handleDeleteInstagram(post._id)}>Remove</button>
-                        </div>
-                    </div>
-                ))}
               </div>
+              {instagramPosts.map(post => (
+                <div key={post._id} className="item-card">
+                  <div className="item-image" style={{ backgroundImage: `url("${post.imageUrl}")` }}></div>
+                  <div className="card-actions">
+                    <button className="btn-icon delete" onClick={() => handleDeleteInstagram(post._id)}>Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {activeTab === 'leads' && (
           <div className="fade-in">
-             <div className="glass-card">
-                 <h2 className="form-section-title">Customer Leads</h2>
-                 <p style={{color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px'}}>
-                    Verified customer contacts captured via OTP.
-                 </p>
-                 <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                    {leads.length === 0 ? (
-                        <div style={{textAlign: 'center', padding: '40px', opacity: 0.5}}>
-                            <p>No leads captured yet.</p>
-                        </div>
-                    ) : leads.map(lead => (
-                        <div key={lead._id} className="lead-item">
-                            <div className="lead-info">
-                                <h3>{lead.email}</h3>
-                                <p>📞 {lead.phone || 'No phone provided'}</p>
-                                <div className="lead-meta">🕒 {new Date(lead.createdAt).toLocaleString()}</div>
-                            </div>
-                            <button className="primary-btn" style={{width: 'auto', padding: '8px 16px'}} onClick={() => handleDeleteLead(lead._id)}>
-                                Mark Verified
-                            </button>
-                        </div>
-                    ))}
-                 </div>
-             </div>
+            <div className="glass-card">
+              <h2 className="form-section-title">Customer Leads</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+                Verified customer contacts captured via OTP.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {leads.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                    <p>No leads captured yet.</p>
+                  </div>
+                ) : leads.map(lead => (
+                  <div key={lead._id} className="lead-item">
+                    <div className="lead-info">
+                      <h3>{lead.email}</h3>
+                      <p>📞 {lead.phone || 'No phone provided'}</p>
+                      <div className="lead-meta">🕒 {new Date(lead.createdAt).toLocaleString()}</div>
+                    </div>
+                    <button className="primary-btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => handleDeleteLead(lead._id)}>
+                      Mark Verified
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === 'orders' && (
           <div className="fade-in">
-             <div className="glass-card">
-                 <h2 className="form-section-title">Customer Orders</h2>
-                 <p style={{color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px'}}>
-                    Manage all incoming customer orders.
-                 </p>
-                 <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                    {orders.length === 0 ? (
-                        <div style={{textAlign: 'center', padding: '40px', opacity: 0.5}}>
-                            <p>No orders received yet.</p>
-                        </div>
-                    ) : orders.map((order: any) => (
-                        <div key={order._id} className="lead-item" style={{display: 'block', padding: '20px'}}>
-                            <div style={{display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px'}}>
-                              <div>
-                                <h3 style={{fontSize: '16px', margin: 0}}>Order: {order._id.substring(0, 8).toUpperCase()}</h3>
-                                <p style={{color: 'var(--text-muted)', fontSize: '12px'}}>Email: {order.userEmail}</p>
-                              </div>
-                              <div style={{textAlign: 'right'}}>
-                                <h3 style={{fontSize: '18px', color: '#10b981', margin: 0}}>₹{order.totalAmount}</h3>
-                                <span style={{display: 'inline-block', background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, marginTop: '4px'}}>
-                                  {order.status || 'Pending'}
-                                </span>
-                              </div>
-                            </div>
+            <div className="glass-card">
+              <h2 className="form-section-title">Customer Orders</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+                Manage all incoming customer orders.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {orders.filter((o: any) => o.status !== 'Cancelled').length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                    <p>No active orders.</p>
+                  </div>
+                ) : orders.filter((o: any) => o.status !== 'Cancelled').map((order: any) => (
+                  <div key={order._id} className="lead-item" style={{ display: 'block', padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', margin: 0 }}>Order: {order._id.substring(0, 8).toUpperCase()}</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Email: {order.userEmail}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <h3 style={{ fontSize: '18px', color: '#10b981', margin: 0 }}>₹{order.totalAmount}</h3>
+                        
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.5px' }}>UPDATE STATUS</label>
+                          <select
+                            value={order.status || 'Pending'}
+                            onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            try {
+                              setIsLoading(true);
+                              const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus })
+                              });
+                              if (res.ok) {
+                                showStatus('Order status updated successfully!');
+                                fetchOrders();
+                              } else {
+                                showStatus('Failed to update status', 'error');
+                              }
+                            } catch (err) {
+                              showStatus('Error updating status', 'error');
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }}
+                          style={{
+                            background: order.status === 'Cancelled' ? '#fee2e2' : (order.status === 'Pending' || !order.status) ? '#fef3c7' : '#d1fae5',
+                            color: order.status === 'Cancelled' ? '#991b1b' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#065f46',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            marginTop: '4px',
+                            border: `1px solid ${order.status === 'Cancelled' ? '#fca5a5' : (order.status === 'Pending' || !order.status) ? '#d97706' : '#34d399'}`,
+                            cursor: 'pointer',
+                            outline: 'none'
+                          }}
+                        >
+                          {['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'].map(status => {
+                            const statuses = ['Pending', 'Payment Verified', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
+                            const currentIndex = statuses.indexOf(order.status || 'Pending');
+                            const itemIndex = statuses.indexOf(status);
                             
-                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
-                              <div>
-                                <h4 style={{fontSize: '13px', color: '#64748b', marginBottom: '6px'}}>Delivery Address</h4>
-                                <p style={{fontSize: '14px', margin: 0}}><strong>{order.address?.name}</strong> ({order.address?.phone})</p>
-                                <p style={{fontSize: '13px', margin: '4px 0 0 0', color: '#333'}}>{order.address?.addressLine}, {order.address?.pincode}</p>
-                              </div>
-                              <div>
-                                <h4 style={{fontSize: '13px', color: '#64748b', marginBottom: '6px'}}>Items Ordered</h4>
-                                <ul style={{listStyle: 'none', padding: 0, margin: 0, fontSize: '13px'}}>
-                                  {order.items?.map((item: any, i: number) => (
-                                    <li key={i} style={{marginBottom: '4px'}}>
-                                      {item.quantity}x {item.name} <span style={{color: '#888'}}>(Size: {item.size})</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                            <div className="lead-meta" style={{marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee'}}>
-                              🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
-                            </div>
+                            // If it's the current status or a previous status, color it red.
+                            // The user requested: "upto packed every text need to be red"
+                            const isPastOrCurrent = itemIndex <= currentIndex && currentIndex !== -1;
+                            
+                            return (
+                              <option 
+                                key={status} 
+                                value={status}
+                                style={{ color: isPastOrCurrent ? '#ef4444' : '#0f172a', fontWeight: isPastOrCurrent ? 'bold' : 'normal' }}
+                              >
+                                {isPastOrCurrent ? `✓ ${status}` : status}
+                              </option>
+                            );
+                          })}
+                          <option value="Cancelled" style={{ color: '#ef4444', fontWeight: 'bold' }}>Cancelled</option>
+                        </select>
                         </div>
-                    ))}
-                 </div>
-             </div>
+                        
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>EXPECTED DELIVERY</label>
+                          <input
+                            type="date"
+                            value={order.expectedDeliveryDate || ''}
+                             onChange={async (e) => {
+                              const newDate = e.target.value;
+                              
+                              // Optimistically update local state to feel responsive and avoid focus theft
+                              setOrders(prevOrders => prevOrders.map(o => 
+                                o._id === order._id ? { ...o, expectedDeliveryDate: newDate } : o
+                              ));
+
+                              // Only save when the date is fully cleared OR contains a completed 4-digit year (between 2020 and 2100)
+                              const isComplete = !newDate || (() => {
+                                const parts = newDate.split('-');
+                                if (parts.length !== 3) return false;
+                                const year = parseInt(parts[0], 10);
+                                return year >= 2020 && year <= 2100;
+                              })();
+
+                              if (!isComplete) return;
+
+                              try {
+                                const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ expectedDeliveryDate: newDate })
+                                });
+                                if (res.ok) {
+                                  showStatus('Expected delivery date updated!');
+                                } else {
+                                  showStatus('Failed to update expected delivery date', 'error');
+                                  fetchOrders(); // Revert to database state on failure
+                                }
+                              } catch (err) {
+                                showStatus('Error updating expected delivery date', 'error');
+                                fetchOrders();
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              border: '1px solid #ddd',
+                              background: '#fff',
+                              cursor: 'pointer',
+                              outline: 'none',
+                              color: '#333'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Delivery Address</h4>
+                        <p style={{ fontSize: '14px', margin: 0 }}><strong>{order.address?.name}</strong> ({order.address?.phone})</p>
+                        <p style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#333' }}>{order.address?.addressLine}, {order.address?.pincode}</p>
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Items Ordered</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px' }}>
+                          {order.items?.map((item: any, i: number) => (
+                            <li key={i} style={{ marginBottom: '4px' }}>
+                              {item.quantity}x {item.name} <span style={{ color: '#888' }}>(Size: {item.size})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #eee' }}>
+                      <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px', fontWeight: 600 }}>Tracking Milestone Dates</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Order Placed</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.placed || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'placed', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Payment Verified</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.paymentVerified || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'paymentVerified', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Packed</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.packed || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'packed', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Shipped</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.shipped || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'shipped', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Out for Delivery</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.outForDelivery || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'outForDelivery', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Delivered</label>
+                          <input
+                            type="date"
+                            value={order.statusDates?.delivered || ''}
+                            onChange={(e) => handleUpdateOrderDate(order._id, 'delivered', e.target.value)}
+                            style={{
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              background: '#fff',
+                              color: '#0f172a',
+                              width: '100%',
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+                      🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'cancelled_orders' && (
+          <div className="fade-in">
+            <div className="glass-card">
+              <h2 className="form-section-title">Cancelled Orders</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+                View all cancelled customer orders.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {orders.filter((o: any) => o.status === 'Cancelled').length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                    <p>No cancelled orders.</p>
+                  </div>
+                ) : orders.filter((o: any) => o.status === 'Cancelled').map((order: any) => (
+                  <div key={order._id} className="lead-item" style={{ display: 'block', padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', margin: 0, color: '#ef4444', textDecoration: 'line-through' }}>Order: {order._id.substring(0, 8).toUpperCase()}</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Email: {order.userEmail}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <h3 style={{ fontSize: '18px', color: '#ef4444', margin: 0 }}>₹{order.totalAmount}</h3>
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.5px' }}>UPDATE STATUS</label>
+                          <select
+                            value={order.status || 'Pending'}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              try {
+                                setIsLoading(true);
+                                const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: newStatus })
+                                });
+                                if (res.ok) {
+                                  showStatus('Order status updated successfully!');
+                                  fetchOrders();
+                                } else {
+                                  showStatus('Failed to update status', 'error');
+                                }
+                              } catch (err) {
+                                showStatus('Error updating status', 'error');
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                            style={{
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              marginTop: '4px',
+                              border: '1px solid #fca5a5',
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Payment Verified">Payment Verified</option>
+                            <option value="Packed">Packed</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Delivery Address</h4>
+                        <p style={{ fontSize: '14px', margin: 0 }}><strong>{order.address?.name}</strong> ({order.address?.phone})</p>
+                        <p style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#333' }}>{order.address?.addressLine}, {order.address?.pincode}</p>
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Items Ordered</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px' }}>
+                          {order.items?.map((item: any, i: number) => (
+                            <li key={i} style={{ marginBottom: '4px' }}>
+                              {item.quantity}x {item.name} <span style={{ color: '#888' }}>(Size: {item.size})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+                      🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1238,16 +1802,16 @@ const App = () => {
               <form onSubmit={handleAddAnnouncement}>
                 <div className="form-group">
                   <label>Announcement Text</label>
-                  <div style={{display: 'flex', gap: '10px'}}>
-                    <input 
-                      className="input-styled" 
-                      type="text" 
-                      value={announcementText} 
-                      onChange={e => setAnnouncementText(e.target.value)} 
-                      placeholder="Enter your announcement text here..." 
-                      required 
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      className="input-styled"
+                      type="text"
+                      value={announcementText}
+                      onChange={e => setAnnouncementText(e.target.value)}
+                      placeholder="Enter your announcement text here..."
+                      required
                     />
-                    <button type="submit" disabled={isLoading || !announcementText.trim()} className="primary-btn" style={{width: 'auto', whiteSpace: 'nowrap'}}>
+                    <button type="submit" disabled={isLoading || !announcementText.trim()} className="primary-btn" style={{ width: 'auto', whiteSpace: 'nowrap' }}>
                       Upload
                     </button>
                   </div>
@@ -1255,17 +1819,17 @@ const App = () => {
               </form>
             </div>
 
-            <div className="glass-card" style={{marginTop: '24px'}}>
+            <div className="glass-card" style={{ marginTop: '24px' }}>
               <h2 className="form-section-title">Active Announcements</h2>
-              <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {announcements.length === 0 ? (
-                  <div style={{textAlign: 'center', padding: '20px', opacity: 0.5}}>
+                  <div style={{ textAlign: 'center', padding: '20px', opacity: 0.5 }}>
                     <p>No active announcements.</p>
                   </div>
                 ) : announcements.map(a => (
                   <div key={a._id} className="lead-item">
                     <div className="lead-info">
-                      <h3 style={{fontSize: '15px'}}>{a.text}</h3>
+                      <h3 style={{ fontSize: '15px' }}>{a.text}</h3>
                       <div className="lead-meta">🕒 {new Date(a.createdAt).toLocaleString()}</div>
                     </div>
                     <button className="btn-icon delete" onClick={() => handleDeleteAnnouncement(a._id)}>
@@ -1292,45 +1856,45 @@ const App = () => {
 
 // Sub-component for lazy loading video in Admin Card
 function ReelAdminCard({ reel, API_BASE, onDelete }: any) {
-    const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (reel.videoUrl) {
-            setVideoSrc(reel.videoUrl);
-            return;
+  useEffect(() => {
+    if (reel.videoUrl) {
+      setVideoSrc(reel.videoUrl);
+      return;
+    }
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/reels/video/${reel._id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setVideoSrc(data.url);
         }
-        const load = async () => {
-            try {
-                const res = await fetch(`${API_BASE}/api/reels/video/${reel._id}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setVideoSrc(data.url);
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        load();
-    }, [reel._id]);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+  }, [reel._id]);
 
-    return (
-        <div className="item-card">
-            <div className="item-image" style={{padding: 0}}>
-                {videoSrc ? (
-                    <video src={videoSrc} style={{width: '100%', height: '100%', objectFit: 'cover'}} muted loop onMouseEnter={e => e.currentTarget.play()} onMouseLeave={e => e.currentTarget.pause()} />
-                ) : (
-                    <div className="spinner" style={{marginTop: '40%'}}></div>
-                )}
-            </div>
-            <div className="item-body">
-                <h3>{reel.productId?.name || 'Unknown Dress'}</h3>
-                <p style={{fontSize: '11px', color: '#64748b'}}>Category: {reel.category}</p>
-            </div>
-            <div className="card-actions">
-                <button className="btn-icon delete" onClick={onDelete}>Remove</button>
-            </div>
-        </div>
-    );
+  return (
+    <div className="item-card">
+      <div className="item-image" style={{ padding: 0 }}>
+        {videoSrc ? (
+          <video src={videoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted loop onMouseEnter={e => e.currentTarget.play()} onMouseLeave={e => e.currentTarget.pause()} />
+        ) : (
+          <div className="spinner" style={{ marginTop: '40%' }}></div>
+        )}
+      </div>
+      <div className="item-body">
+        <h3>{reel.productId?.name || 'Unknown Dress'}</h3>
+        <p style={{ fontSize: '11px', color: '#64748b' }}>Category: {reel.category}</p>
+      </div>
+      <div className="card-actions">
+        <button className="btn-icon delete" onClick={onDelete}>Remove</button>
+      </div>
+    </div>
+  );
 }
 
 export default App

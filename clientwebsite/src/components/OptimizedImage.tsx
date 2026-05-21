@@ -47,7 +47,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   }
 
   // Create a tiny blur placeholder URL
-  const lowResSrc = src && src.includes('cloudinary.com') 
+  const lowResSrc = src && src.includes('cloudinary.com')
     ? src.replace('/upload/', '/upload/f_auto,q_10,w_50,e_blur:1000/')
     : src;
 
@@ -60,7 +60,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
       decoding="async"
       fetchPriority={priority ? "high" : "auto"}
       onClick={handleClick}
-      style={{ 
+      style={{
         backgroundImage: `url(${lowResSrc})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',

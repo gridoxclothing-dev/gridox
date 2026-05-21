@@ -13,22 +13,23 @@ interface CartItem {
   image: string;
   size: string;
   category?: string;
+  productId?: string;
 }
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  
+
   // Steps: 2 = Address, 3 = Payment, 4 = Success
   const [step, setStep] = useState<number>(2);
-  
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState('');
-  
+
   const finalTotal = Math.max(0, subtotal - discount);
-  
+
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -76,7 +77,7 @@ const CheckoutPage = () => {
   const handleApplyPromo = () => {
     setPromoError('');
     if (!promoCode.trim()) return;
-    
+
     if (promoCode.trim().toUpperCase() === 'GRIDOX10') {
       const discountAmount = Math.round(subtotal * 0.10);
       setDiscount(discountAmount);
@@ -112,7 +113,7 @@ const CheckoutPage = () => {
 
         const sessionData = await sessionResponse.json();
         console.log('[PAYMENT] Session created:', sessionData);
-        
+
         // 2. Initialize Cashfree
         if (!(window as any).Cashfree) {
           console.error('[PAYMENT] Cashfree SDK not found on window object');
@@ -123,7 +124,7 @@ const CheckoutPage = () => {
         console.log('[PAYMENT] Initializing SDK. Mode detected:', cashfreeMode);
 
         const cashfree = (window as any).Cashfree({
-          mode: cashfreeMode 
+          mode: cashfreeMode
         });
 
         const checkoutOptions = {
@@ -140,7 +141,7 @@ const CheckoutPage = () => {
             alert(result.error.message || "Payment failed. Please try again.");
             setIsPlacingOrder(false);
           }
-          
+
           if (result.redirect) {
             // This happens when redirectTarget is _self
             console.log("Redirecting to payment...");
@@ -155,12 +156,12 @@ const CheckoutPage = () => {
         // NOTE: In a real-world scenario, we'd create the order in DB FIRST 
         // with a 'PAYMENT_PENDING' status, then update it via webhook.
         // For simplicity here, we'll create it if redirect didn't happen yet or use callback.
-        
+
         // Actually, let's create the order first
         const orderData = {
           userEmail: user.email,
           items: cartItems.map(item => ({
-            productId: item.id,
+            productId: item.productId || item.id,
             name: item.name,
             price: item.price,
             quantity: item.quantity,
@@ -182,7 +183,8 @@ const CheckoutPage = () => {
         });
 
         if (!orderResponse.ok) {
-          throw new Error('Failed to record order');
+          const errData = await orderResponse.json();
+          throw new Error(errData.message || 'Failed to record order');
         }
 
         return; // Redirect handled by Cashfree
@@ -192,7 +194,7 @@ const CheckoutPage = () => {
       const orderData = {
         userEmail: user.email,
         items: cartItems.map(item => ({
-          productId: item.id,
+          productId: item.productId || item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
@@ -217,7 +219,8 @@ const CheckoutPage = () => {
         localStorage.removeItem('gridox_cart');
         window.dispatchEvent(new Event('cartUpdated'));
       } else {
-        alert("Failed to place order. Please try again.");
+        const errData = await response.json();
+        alert(errData.message || "Failed to place order. Please try again.");
       }
     } catch (error: any) {
       console.error("Order error:", error);
@@ -288,7 +291,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
-      
+
       {step !== 4 && (
         <div className="bg-background border-b border-border sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between text-sm">
@@ -305,9 +308,9 @@ const CheckoutPage = () => {
                 </div>
                 <span className="ml-2 font-medium text-[#1e293b] text-xs uppercase tracking-wide">Sign Up</span>
               </div>
-              
+
               <div className="w-8 md:w-16 h-px bg-gray-300 mx-2 md:mx-4"></div>
-              
+
               {/* Step 2: Address */}
               <div className="flex items-center">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? (step > 2 ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground') : 'bg-muted text-muted-foreground'}`}>
@@ -344,13 +347,13 @@ const CheckoutPage = () => {
               Thank you for shopping with GriDox. Your order has been placed successfully and will be delivered soon.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <button 
+              <button
                 onClick={() => navigate('/my-orders')}
                 className="px-8 py-3 bg-primary text-primary-foreground text-sm font-medium tracking-wider w-full sm:w-auto hover:opacity-90 transition-all"
               >
                 VIEW MY ORDERS
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/#categories')}
                 className="px-8 py-3 border border-border text-black text-sm font-medium tracking-wider w-full sm:w-auto hover:bg-background transition-colors"
               >
@@ -372,51 +375,51 @@ const CheckoutPage = () => {
                   <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm text-muted-foreground mb-1">Full Name *</label>
-                      <input 
-                        required 
-                        type="text" 
+                      <input
+                        required
+                        type="text"
                         value={address.name}
-                        onChange={e => setAddress({...address, name: e.target.value})}
+                        onChange={e => setAddress({ ...address, name: e.target.value })}
                         className="w-full border border-border p-3 focus:outline-none focus:border-black"
                       />
                     </div>
                     <div>
                       <label className="block text-sm text-muted-foreground mb-1">Mobile Number *</label>
-                      <input 
-                        required 
-                        type="tel" 
+                      <input
+                        required
+                        type="tel"
                         pattern="[0-9]{10}"
                         title="10 digit mobile number"
                         value={address.phone}
-                        onChange={e => setAddress({...address, phone: e.target.value})}
+                        onChange={e => setAddress({ ...address, phone: e.target.value })}
                         className="w-full border border-border p-3 focus:outline-none focus:border-black"
                       />
                     </div>
                     <div>
                       <label className="block text-sm text-muted-foreground mb-1">Address Line *</label>
-                      <textarea 
-                        required 
+                      <textarea
+                        required
                         rows={3}
                         value={address.addressLine}
-                        onChange={e => setAddress({...address, addressLine: e.target.value})}
+                        onChange={e => setAddress({ ...address, addressLine: e.target.value })}
                         className="w-full border border-border p-3 focus:outline-none focus:border-black"
                       ></textarea>
                     </div>
                     <div>
                       <label className="block text-sm text-muted-foreground mb-1">Pincode *</label>
-                      <input 
-                        required 
-                        type="text" 
+                      <input
+                        required
+                        type="text"
                         pattern="[0-9]{6}"
                         title="6 digit pincode"
                         value={address.pincode}
-                        onChange={e => setAddress({...address, pincode: e.target.value})}
+                        onChange={e => setAddress({ ...address, pincode: e.target.value })}
                         className="w-full border border-border p-3 focus:outline-none focus:border-black"
                       />
                     </div>
 
                     <div className="pt-4">
-                      <button 
+                      <button
                         type="submit"
                         disabled={isCheckingPincode}
                         className="px-8 py-3 bg-primary text-primary-foreground font-medium text-sm tracking-wider hover:opacity-90 transition-all rounded-sm disabled:opacity-50"
@@ -444,9 +447,9 @@ const CheckoutPage = () => {
                   <h2 className="text-xl font-medium mb-6 flex items-center">
                     <CreditCard className="mr-2" size={20} /> Choose Payment Mode
                   </h2>
-                  
+
                   {/* Online Payment Option */}
-                  <div 
+                  <div
                     onClick={() => setPaymentMode('ONLINE')}
                     className={`border p-4 bg-background flex items-center justify-between mb-4 cursor-pointer relative overflow-hidden transition-all ${paymentMode === 'ONLINE' ? 'border-[#001325] shadow-sm' : 'border-border opacity-70'}`}
                   >
@@ -468,7 +471,7 @@ const CheckoutPage = () => {
                   </div>
 
                   {/* COD Option */}
-                  <div 
+                  <div
                     onClick={() => setPaymentMode('COD')}
                     className={`border p-4 bg-background flex items-center justify-between mb-8 cursor-pointer relative overflow-hidden transition-all ${paymentMode === 'COD' ? 'border-[#001325] shadow-sm' : 'border-border opacity-70'}`}
                   >
@@ -486,7 +489,7 @@ const CheckoutPage = () => {
                   </div>
 
                   <div className="border-t border-border pt-6">
-                    <button 
+                    <button
                       onClick={placeOrder}
                       disabled={isPlacingOrder}
                       className="w-full py-4 bg-primary text-primary-foreground font-medium tracking-wider hover:opacity-90 transition-all disabled:opacity-50"
@@ -505,7 +508,7 @@ const CheckoutPage = () => {
                   <h3 className="font-medium text-lg">Bag</h3>
                   <span className="text-sm text-muted-foreground">{cartItems.length} Items</span>
                 </div>
-                
+
                 <div className="space-y-4 mb-6 max-h-[30vh] overflow-y-auto pr-2">
                   {cartItems.map(item => (
                     <div key={item.id} className="flex gap-4">
@@ -521,14 +524,14 @@ const CheckoutPage = () => {
 
                 <div className="border-t border-border pt-4 mb-4">
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                      placeholder="Coupon Code" 
+                      placeholder="Coupon Code"
                       className="flex-1 border border-border px-3 py-2 text-sm focus:outline-none focus:border-black uppercase"
                     />
-                    <button 
+                    <button
                       onClick={handleApplyPromo}
                       className="px-4 py-2 bg-primary text-primary-foreground text-xs font-medium tracking-wider hover:opacity-90 transition-all"
                     >
@@ -566,7 +569,7 @@ const CheckoutPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-4 flex items-center justify-center p-4 bg-background border border-border text-xs text-muted-foreground gap-3">
                 <img src="https://cdn-icons-png.flaticon.com/512/6062/6062646.png" alt="Secure" className="w-6 h-6 opacity-60" />
                 <div>
@@ -575,7 +578,7 @@ const CheckoutPage = () => {
                 </div>
               </div>
             </div>
-            
+
           </div>
         )}
       </div>
