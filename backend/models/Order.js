@@ -23,6 +23,8 @@ const OrderSchema = new mongoose.Schema({
   address: AddressSchema,
   paymentMethod: { type: String, default: 'COD' },
   totalAmount: { type: Number, required: true },
+  discountAmount: { type: Number, default: 0 },
+  couponCode: { type: String },
   status: { type: String, default: 'Pending' },
   expectedDeliveryDate: { type: String },
   statusDates: {

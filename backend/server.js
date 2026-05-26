@@ -175,6 +175,7 @@ const authRoutes = require('./routes/auth');
 const { verifyToken } = require('./middleware/auth');
 const User = require('./models/User');
 const Order = require('./models/Order');
+const Coupon = require('./models/Coupon');
 
 // Cashfree Configuration
 const { Cashfree, CFEnvironment } = require('cashfree-pg');
@@ -211,9 +212,12 @@ app.get('/api/dashboard', verifyToken, async (req, res) => {
 // Create Order
 app.post('/api/orders', verifyToken, async (req, res) => {
   try {
-    const { userEmail, items, address, paymentMethod, totalAmount } = req.body;
+    const { userEmail, items, address, paymentMethod, couponCode, totalAmount: frontendTotal } = req.body;
 
-    // Validate Stock Before Placing Order
+    let calculatedTotal = 0;
+    let discountAmount = 0;
+
+    // Validate Stock and Calculate Subtotal Before Placing Order
     for (const item of items) {
       if (item.productId && item.size) {
         const product = await Product.findById(item.productId);
@@ -229,8 +233,50 @@ app.post('/api/orders', verifyToken, async (req, res) => {
             message: `Insufficient stock for ${product.name} (Size: ${item.size}). Only ${availableStock} available.` 
           });
         }
+        
+        calculatedTotal += item.price * item.quantity;
       }
     }
+
+    // Apply Coupon Logic
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ couponCode: couponCode.toUpperCase() });
+      if (!coupon) return res.status(400).json({ message: 'Invalid coupon code' });
+      if (!coupon.activeStatus) return res.status(400).json({ message: 'Coupon is not active' });
+      if (new Date() > new Date(coupon.expiryDate)) return res.status(400).json({ message: 'Coupon has expired' });
+      if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) return res.status(400).json({ message: 'Coupon usage limit reached' });
+
+      let applicableItems = items;
+      if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
+        const applicableIds = coupon.applicableProducts.map(id => id.toString());
+        applicableItems = items.filter(i => applicableIds.includes(i.productId));
+      }
+
+      if (applicableItems.length === 0) return res.status(400).json({ message: 'Coupon is not applicable to any items in cart' });
+
+      let applicableSubtotal = applicableItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      
+      if (coupon.minimumPurchase > 0 && applicableSubtotal < coupon.minimumPurchase) {
+        return res.status(400).json({ message: `Minimum purchase of ₹${coupon.minimumPurchase} required for this coupon` });
+      }
+
+      if (coupon.discountType === 'percentage') {
+        discountAmount = applicableSubtotal * (coupon.discountValue / 100);
+      } else {
+        discountAmount = Math.min(coupon.discountValue, applicableSubtotal);
+      }
+
+      calculatedTotal -= discountAmount;
+      calculatedTotal = Math.max(0, calculatedTotal);
+
+      // Increment coupon usage
+      coupon.usedCount += 1;
+      await coupon.save();
+    }
+
+    // In case frontend has a small rounding difference, we use backend calculated total. 
+    // You could also add a check here to ensure frontendTotal == calculatedTotal.
+    const finalTotalAmount = calculatedTotal > 0 ? calculatedTotal : (frontendTotal || 0);
 
     const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     const newOrder = new Order({
@@ -238,7 +284,9 @@ app.post('/api/orders', verifyToken, async (req, res) => {
       items, 
       address, 
       paymentMethod, 
-      totalAmount,
+      totalAmount: finalTotalAmount,
+      discountAmount,
+      couponCode,
       statusDates: {
         placed: localToday
       }
@@ -1132,6 +1180,144 @@ app.delete('/api/announcements/:id', async (req, res) => {
     res.status(200).send({ message: 'Announcement removed successfully' });
   } catch (error) {
     res.status(500).send({ message: 'Error removing announcement', error: error.message });
+  }
+});
+
+// ========================
+// COUPON ROUTES
+// ========================
+
+// 1. Create Coupon (Admin)
+app.post('/api/admin/coupons', async (req, res) => {
+  try {
+    const { couponCode, discountType, discountValue, expiryDate, minimumPurchase, usageLimit, activeStatus, applicableProducts } = req.body;
+    
+    // Check if coupon exists
+    const existingCoupon = await Coupon.findOne({ couponCode: couponCode.toUpperCase() });
+    if (existingCoupon) {
+      return res.status(400).json({ message: 'Coupon code already exists' });
+    }
+
+    const newCoupon = new Coupon({
+      couponCode,
+      discountType,
+      discountValue,
+      expiryDate,
+      minimumPurchase,
+      usageLimit,
+      activeStatus,
+      applicableProducts
+    });
+
+    const saved = await newCoupon.save();
+    res.status(201).json({ message: 'Coupon created successfully', data: saved });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating coupon', error: error.message });
+  }
+});
+
+// 2. Get All Coupons (Admin)
+app.get('/api/admin/coupons', async (req, res) => {
+  try {
+    const coupons = await Coupon.find().populate('applicableProducts', 'name price image').sort({ createdAt: -1 });
+    res.status(200).json(coupons);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching coupons', error: error.message });
+  }
+});
+
+// 3. Update Coupon (Admin)
+app.put('/api/admin/coupons/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    if (updateData.couponCode) {
+      updateData.couponCode = updateData.couponCode.toUpperCase();
+    }
+    const updated = await Coupon.findByIdAndUpdate(id, updateData, { new: true });
+    res.status(200).json({ message: 'Coupon updated successfully', data: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating coupon', error: error.message });
+  }
+});
+
+// 4. Delete Coupon (Admin)
+app.delete('/api/admin/coupons/:id', async (req, res) => {
+  try {
+    await Coupon.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Coupon removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error removing coupon', error: error.message });
+  }
+});
+
+// 5. Validate Coupon (Checkout)
+app.post('/api/coupons/validate', async (req, res) => {
+  try {
+    const { couponCode, cartItems } = req.body;
+
+    if (!couponCode) {
+      return res.status(400).json({ valid: false, message: 'Please enter a coupon code' });
+    }
+
+    const coupon = await Coupon.findOne({ couponCode: couponCode.toUpperCase() });
+
+    if (!coupon) {
+      return res.status(404).json({ valid: false, message: 'Invalid coupon code' });
+    }
+
+    if (!coupon.activeStatus) {
+      return res.status(400).json({ valid: false, message: 'This coupon is no longer active' });
+    }
+
+    if (new Date() > new Date(coupon.expiryDate)) {
+      return res.status(400).json({ valid: false, message: 'This coupon has expired' });
+    }
+
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      return res.status(400).json({ valid: false, message: 'This coupon has reached its usage limit' });
+    }
+
+    // Check if cart has products that this coupon applies to
+    // If applicableProducts is empty, assume it applies to all products (or you can restrict it to only be valid if specific products match)
+    // Based on user requirements: "Coupon should also be linked with the specific dress/product. Apply discount ONLY to that specific dress/product."
+    // So if applicableProducts has items, check if they are in the cart.
+
+    let applicableCartItems = cartItems;
+    if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
+      const applicableProductIds = coupon.applicableProducts.map(id => id.toString());
+      applicableCartItems = cartItems.filter(item => applicableProductIds.includes(item.productId));
+      
+      if (applicableCartItems.length === 0) {
+        return res.status(400).json({ valid: false, message: 'This coupon is not valid for any items in your cart' });
+      }
+    }
+
+    // Calculate subtotal of applicable items to check minimum purchase
+    const applicableSubtotal = applicableCartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+    if (coupon.minimumPurchase > 0 && applicableSubtotal < coupon.minimumPurchase) {
+      return res.status(400).json({ 
+        valid: false, 
+        message: `Minimum purchase of ₹${coupon.minimumPurchase} required for applicable items` 
+      });
+    }
+
+    // Return the successful validation and applicable item IDs so the frontend can calculate the correct discount
+    res.status(200).json({ 
+      valid: true, 
+      coupon: {
+        _id: coupon._id,
+        couponCode: coupon.couponCode,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        applicableProducts: coupon.applicableProducts
+      },
+      message: 'Coupon applied successfully' 
+    });
+
+  } catch (error) {
+    res.status(500).json({ valid: false, message: 'Error validating coupon', error: error.message });
   }
 });
 

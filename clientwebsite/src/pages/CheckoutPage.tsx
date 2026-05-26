@@ -25,6 +25,7 @@ const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [subtotal, setSubtotal] = useState(0);
   const [promoCode, setPromoCode] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState('');
 
@@ -74,16 +75,51 @@ const CheckoutPage = () => {
     checkAuth();
   }, [navigate]);
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = async () => {
     setPromoError('');
     if (!promoCode.trim()) return;
 
-    if (promoCode.trim().toUpperCase() === 'GRIDOX10') {
-      const discountAmount = Math.round(subtotal * 0.10);
-      setDiscount(discountAmount);
-    } else {
-      setPromoError('Invalid coupon code');
+    try {
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          couponCode: promoCode, 
+          cartItems: cartItems.map(item => ({ ...item, productId: item.productId || item.id }))
+        }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        const coupon = data.coupon;
+        let applicableSubtotal = subtotal;
+
+        if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
+          const applicableIds = coupon.applicableProducts.map((id: string) => id.toString());
+          const applicableItems = cartItems.filter(item => applicableIds.includes(item.productId || item.id));
+          applicableSubtotal = applicableItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        }
+
+        let discountAmount = 0;
+        if (coupon.discountType === 'percentage') {
+          discountAmount = applicableSubtotal * (coupon.discountValue / 100);
+        } else {
+          discountAmount = Math.min(coupon.discountValue, applicableSubtotal);
+        }
+
+        setDiscount(discountAmount);
+        setAppliedCouponCode(coupon.couponCode);
+      } else {
+        setPromoError(data.message || 'Invalid coupon code');
+        setDiscount(0);
+        setAppliedCouponCode('');
+      }
+    } catch (error) {
+      setPromoError('Error validating coupon');
       setDiscount(0);
+      setAppliedCouponCode('');
     }
   };
 
@@ -172,6 +208,7 @@ const CheckoutPage = () => {
           address: address,
           paymentMethod: "ONLINE",
           totalAmount: finalTotal,
+          couponCode: appliedCouponCode || undefined,
           status: 'Payment Pending'
         };
 
@@ -204,7 +241,8 @@ const CheckoutPage = () => {
         })),
         address: address,
         paymentMethod: "COD",
-        totalAmount: finalTotal
+        totalAmount: finalTotal,
+        couponCode: appliedCouponCode || undefined
       };
 
       const response = await fetch('/api/orders', {
@@ -539,7 +577,7 @@ const CheckoutPage = () => {
                     </button>
                   </div>
                   {promoError && <p className="text-red-500 text-xs mt-1">{promoError}</p>}
-                  {discount > 0 && <p className="text-green-600 text-xs mt-1 font-medium">Coupon applied! 10% discount added.</p>}
+                  {discount > 0 && appliedCouponCode && <p className="text-green-600 text-xs mt-1 font-medium">Coupon '{appliedCouponCode}' applied! ₹{discount.toLocaleString()} discount added.</p>}
                 </div>
 
                 <div className="border-t border-border pt-4">
@@ -555,7 +593,7 @@ const CheckoutPage = () => {
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-green-600">
-                        <span>Discount (10%)</span>
+                        <span>Discount ({appliedCouponCode})</span>
                         <span>-₹{discount.toLocaleString()}</span>
                       </div>
                     )}

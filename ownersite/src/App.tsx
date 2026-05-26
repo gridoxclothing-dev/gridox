@@ -57,8 +57,22 @@ interface Announcement {
   createdAt: string;
 }
 
+interface Coupon {
+  _id: string;
+  couponCode: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  expiryDate: string;
+  minimumPurchase: number;
+  usageLimit: number | null;
+  usedCount: number;
+  activeStatus: boolean;
+  applicableProducts: { _id: string, name: string }[];
+  createdAt: string;
+}
+
 const App = () => {
-  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'completed_orders' | 'cancelled_orders' | 'announcements'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'categories' | 'dresses' | 'reels' | 'instagram' | 'leads' | 'orders' | 'completed_orders' | 'cancelled_orders' | 'announcements' | 'coupons'>('banners');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [status, setStatus] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +85,7 @@ const App = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingStockProductId, setEditingStockProductId] = useState<string | null>(null);
   const [tempStock, setTempStock] = useState<{ size: string; quantity: number }[]>([]);
@@ -138,6 +153,18 @@ const App = () => {
     category: ''
   });
 
+  // Coupon Form State
+  const [couponForm, setCouponForm] = useState({
+    couponCode: '',
+    discountType: 'percentage' as 'percentage' | 'fixed',
+    discountValue: '',
+    expiryDate: '',
+    minimumPurchase: '0',
+    usageLimit: '',
+    activeStatus: true,
+    applicableProducts: [] as string[]
+  });
+
   const API_BASE = '';
 
   const productInputRef = useRef<HTMLInputElement>(null);
@@ -171,6 +198,9 @@ const App = () => {
       fetchOrders();
     } else if (activeTab === 'announcements') {
       fetchAnnouncements();
+    } else if (activeTab === 'coupons') {
+      fetchCoupons();
+      fetchProducts(); // needed for selecting applicable products
     }
   }, [activeTab]);
 
@@ -241,6 +271,81 @@ const App = () => {
       }
     } catch (error) {
       console.error('Error fetching banners:', error);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/coupons`);
+      if (response.ok) {
+        const data = await response.json();
+        setCoupons(data);
+      }
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+    }
+  };
+
+  const handleAddCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const dataToSend = {
+        ...couponForm,
+        discountValue: Number(couponForm.discountValue),
+        minimumPurchase: Number(couponForm.minimumPurchase) || 0,
+        usageLimit: couponForm.usageLimit ? Number(couponForm.usageLimit) : null
+      };
+
+      const url = editingId ? `${API_BASE}/api/admin/coupons/${editingId}` : `${API_BASE}/api/admin/coupons`;
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSend)
+      });
+
+      if (response.ok) {
+        showStatus(editingId ? 'Coupon updated!' : 'Coupon added!');
+        resetForms();
+        fetchCoupons();
+      } else {
+        const errData = await response.json();
+        showStatus(errData.message || 'Failed to save coupon', 'error');
+      }
+    } catch (error) {
+      showStatus('Connection error', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditCoupon = (coupon: Coupon) => {
+    setEditingId(coupon._id);
+    setCouponForm({
+      couponCode: coupon.couponCode,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue.toString(),
+      expiryDate: new Date(coupon.expiryDate).toISOString().split('T')[0],
+      minimumPurchase: coupon.minimumPurchase.toString(),
+      usageLimit: coupon.usageLimit ? coupon.usageLimit.toString() : '',
+      activeStatus: coupon.activeStatus,
+      applicableProducts: coupon.applicableProducts.map(p => p._id)
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    if (!confirm('Delete this coupon?')) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/coupons/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        showStatus('Coupon removed.');
+        fetchCoupons();
+      }
+    } catch (error) {
+      showStatus('Error deleting coupon.', 'error');
     }
   };
 
@@ -797,6 +902,10 @@ const App = () => {
     });
     setCategoryForm({ name: '', description: '', fullImage: '', thumbnailImage: '' });
     setReelForm({ videoUrl: '', productId: '', category: '' });
+    setCouponForm({
+      couponCode: '', discountType: 'percentage', discountValue: '', expiryDate: '',
+      minimumPurchase: '0', usageLimit: '', activeStatus: true, applicableProducts: []
+    });
   };
 
   return (
@@ -836,6 +945,9 @@ const App = () => {
             </li>
             <li className={activeTab === 'dresses' ? 'active' : ''} onClick={() => { setActiveTab('dresses'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">👗</span> Dresses
+            </li>
+            <li className={activeTab === 'coupons' ? 'active' : ''} onClick={() => { setActiveTab('coupons'); resetForms(); setIsMobileMenuOpen(false); }}>
+              <span className="icon">🎟️</span> Coupons
             </li>
             <li className={activeTab === 'reels' ? 'active' : ''} onClick={() => { setActiveTab('reels'); resetForms(); setIsMobileMenuOpen(false); }}>
               <span className="icon">🎬</span> Reels
@@ -1293,6 +1405,138 @@ const App = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'coupons' && (
+          <div className="fade-in">
+            <div className="glass-card">
+              <h2 className="form-section-title">{editingId ? 'Edit Coupon' : 'Create New Coupon'}</h2>
+              <form onSubmit={handleAddCoupon}>
+                <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  <div className="form-controls">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <div className="form-group">
+                        <label>Coupon Code</label>
+                        <input className="input-styled" type="text" value={couponForm.couponCode} onChange={e => setCouponForm({ ...couponForm, couponCode: e.target.value.toUpperCase() })} placeholder="e.g. SAVE20" required />
+                      </div>
+                      <div className="form-group">
+                        <label>Expiry Date</label>
+                        <input className="input-styled" type="date" value={couponForm.expiryDate} onChange={e => setCouponForm({ ...couponForm, expiryDate: e.target.value })} required />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <div className="form-group">
+                        <label>Discount Type</label>
+                        <select className="select-styled" value={couponForm.discountType} onChange={e => setCouponForm({ ...couponForm, discountType: e.target.value as 'percentage' | 'fixed' })}>
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="fixed">Fixed Amount (₹)</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Discount Value</label>
+                        <input className="input-styled" type="number" min="0" value={couponForm.discountValue} onChange={e => setCouponForm({ ...couponForm, discountValue: e.target.value })} placeholder={couponForm.discountType === 'percentage' ? 'e.g. 20' : 'e.g. 500'} required />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <div className="form-group">
+                        <label>Minimum Purchase (Optional)</label>
+                        <input className="input-styled" type="number" min="0" value={couponForm.minimumPurchase} onChange={e => setCouponForm({ ...couponForm, minimumPurchase: e.target.value })} placeholder="e.g. 1500" />
+                      </div>
+                      <div className="form-group">
+                        <label>Total Usage Limit (Optional)</label>
+                        <input className="input-styled" type="number" min="1" value={couponForm.usageLimit} onChange={e => setCouponForm({ ...couponForm, usageLimit: e.target.value })} placeholder="e.g. 100 uses" />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Applicable Products (Leave empty for all products)</label>
+                      <div className="size-pills-container" style={{ maxHeight: '200px', overflowY: 'auto', padding: '10px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                        {products.map(p => (
+                          <div key={p._id} className="size-pill">
+                            <input
+                              type="checkbox"
+                              id={`prod-${p._id}`}
+                              checked={couponForm.applicableProducts.includes(p._id)}
+                              onChange={e => {
+                                const newProds = e.target.checked
+                                  ? [...couponForm.applicableProducts, p._id]
+                                  : couponForm.applicableProducts.filter(id => id !== p._id);
+                                setCouponForm({ ...couponForm, applicableProducts: newProds });
+                              }}
+                            />
+                            <label htmlFor={`prod-${p._id}`}>{p.name} (₹{p.price})</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="activeStatus" 
+                        checked={couponForm.activeStatus} 
+                        onChange={e => setCouponForm({ ...couponForm, activeStatus: e.target.checked })} 
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      <label htmlFor="activeStatus" style={{ margin: 0, cursor: 'pointer' }}>Coupon is Active</label>
+                    </div>
+
+                    <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                      <button type="submit" disabled={isLoading} className="primary-btn" style={{ flex: 1 }}>
+                        {editingId ? 'Update Coupon' : 'Create Coupon'}
+                      </button>
+                      {editingId && <button type="button" onClick={resetForms} className="secondary-btn" style={{ flex: 1 }}>Cancel Edit</button>}
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div className="content-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+              {coupons.map(coupon => (
+                <div key={coupon._id} className="item-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                    <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '2px dashed #cbd5e1' }}>
+                      <h3 style={{ margin: 0, letterSpacing: '2px', color: '#0f172a', fontWeight: 'bold' }}>{coupon.couponCode}</h3>
+                    </div>
+                    <span style={{ 
+                      padding: '4px 8px', 
+                      borderRadius: '4px', 
+                      fontSize: '11px', 
+                      fontWeight: 'bold', 
+                      background: coupon.activeStatus ? '#dcfce7' : '#fee2e2', 
+                      color: coupon.activeStatus ? '#166534' : '#991b1b' 
+                    }}>
+                      {coupon.activeStatus ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '14px', marginBottom: '15px' }}>
+                    <p style={{ margin: '0 0 5px 0' }}><strong>Discount:</strong> {coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : `₹${coupon.discountValue}`}</p>
+                    <p style={{ margin: '0 0 5px 0' }}><strong>Valid Until:</strong> {new Date(coupon.expiryDate).toLocaleDateString()}</p>
+                    <p style={{ margin: '0 0 5px 0' }}><strong>Usage:</strong> {coupon.usedCount} / {coupon.usageLimit || '∞'}</p>
+                    {coupon.minimumPurchase > 0 && <p style={{ margin: '0 0 5px 0' }}><strong>Min. Purchase:</strong> ₹{coupon.minimumPurchase}</p>}
+                  </div>
+
+                  {coupon.applicableProducts && coupon.applicableProducts.length > 0 && (
+                    <div style={{ marginTop: 'auto', marginBottom: '15px', background: '#f1f5f9', padding: '10px', borderRadius: '6px' }}>
+                      <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 5px 0', color: '#64748b' }}>APPLICABLE TO ({coupon.applicableProducts.length} PRODUCTS):</p>
+                      <p style={{ fontSize: '12px', margin: 0, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {coupon.applicableProducts.map(p => p.name).join(', ')}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="card-actions" style={{ display: 'flex', gap: '10px', marginTop: 'auto', borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+                    <button className="btn-icon edit" onClick={() => handleEditCoupon(coupon)} style={{ flex: 1 }}>Edit</button>
+                    <button className="btn-icon delete" onClick={() => handleDeleteCoupon(coupon._id)} style={{ flex: 1 }}>Delete</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

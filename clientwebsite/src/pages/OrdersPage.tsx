@@ -205,10 +205,7 @@ const OrdersPage = () => {
               <ArrowLeft size={24} className="text-gray-700" />
             </button>
             <h1 className="flex-1 text-lg md:text-xl font-bold text-gray-800">Order Details</h1>
-            <div className="flex gap-3">
-              <button className="hidden md:flex items-center gap-2 border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm"><HelpCircle size={16} /> Help Center</button>
-              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><Share2 size={20} className="text-gray-600" /></button>
-            </div>
+
           </div>
 
           <div className="md:grid md:grid-cols-3 gap-6 p-4 md:p-8">
@@ -247,13 +244,15 @@ const OrdersPage = () => {
                     <p className="text-sm text-gray-500 font-medium">
                       {selectedOrder.status === 'Cancelled' 
                         ? 'This order has been cancelled.' 
-                        : selectedOrder.status === 'Pending' 
-                          ? 'Your order is confirmed and being prepared.' 
-                          : 'Your order is on the way.'}
+                        : (selectedOrder.status === 'Delivered' || selectedOrder.status === 'Completed')
+                          ? 'Your order has been successfully delivered.'
+                          : selectedOrder.status === 'Pending' 
+                            ? 'Your order is confirmed and being prepared.' 
+                            : 'Your order is on the way.'}
                     </p>
                     {selectedOrder.expectedDeliveryDate && selectedOrder.status !== 'Cancelled' && (
                       <p className="text-xs text-primary font-bold mt-2">
-                        {selectedOrder.status === 'Delivered' ? '🎉 Delivered on: ' : '📅 Expected Delivery: '} 
+                        {(selectedOrder.status === 'Delivered' || selectedOrder.status === 'Completed') ? '🎉 Delivered on: ' : '📅 Expected Delivery: '} 
                         {new Date(selectedOrder.expectedDeliveryDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     )}
@@ -285,7 +284,7 @@ const OrdersPage = () => {
                         if (s === 'Packed') return 2;
                         if (s === 'Shipped') return 3;
                         if (s === 'Out for Delivery') return 4;
-                        if (s === 'Delivered') return 5;
+                        if (s === 'Delivered' || s === 'Completed') return 5;
                         return 0;
                       };
                       const currentStepIndex = getStatusIndex(selectedOrder.status);
@@ -469,7 +468,7 @@ const OrdersPage = () => {
                   <div className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-bold border border-red-200 text-center text-sm shadow-sm">
                     ❌ This order has been Cancelled
                   </div>
-                ) : ['Packed', 'Shipped', 'Out for Delivery', 'Delivered'].includes(selectedOrder.status) ? (
+                ) : ['Shipped', 'Out for Delivery', 'Delivered', 'Completed'].includes(selectedOrder.status) ? (
                   <div className="w-full p-4 bg-gray-50 text-gray-500 rounded-2xl border border-gray-200 text-center text-xs font-semibold leading-relaxed">
                     🔒 This order is <strong>{selectedOrder.status.toLowerCase()}</strong> and cannot be cancelled anymore.
                   </div>
