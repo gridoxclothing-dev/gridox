@@ -665,10 +665,11 @@ app.get('/api/admin/orders', async (req, res) => {
 app.put('/api/admin/orders/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, expectedDeliveryDate, statusDates } = req.body;
+    const { status, expectedDeliveryDate, statusDates, trackingId } = req.body;
     const updateData = {};
     if (status !== undefined) updateData.status = status;
     if (expectedDeliveryDate !== undefined) updateData.expectedDeliveryDate = expectedDeliveryDate;
+    if (trackingId !== undefined) updateData.trackingId = trackingId;
 
     if (statusDates !== undefined && statusDates !== null) {
       for (const [key, val] of Object.entries(statusDates)) {

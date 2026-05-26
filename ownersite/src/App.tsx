@@ -216,45 +216,37 @@ const App = () => {
     }
   };
 
-  const handleUpdateOrderDate = async (orderId: string, milestone: string, dateStr: string) => {
+  const handleUpdateOrderDate = (orderId: string, milestone: string, dateStr: string) => {
     // Optimistic update locally to prevent focus loss!
     setOrders(prevOrders => prevOrders.map(o =>
       o._id === orderId
         ? { ...o, statusDates: { ...(o.statusDates || {}), [milestone]: dateStr } }
         : o
     ));
+  };
 
-    // Only save when the date is fully cleared OR contains a completed 4-digit year (between 2020 and 2100)
-    const isComplete = !dateStr || (() => {
-      const parts = dateStr.split('-');
-      if (parts.length !== 3) return false;
-      const year = parseInt(parts[0], 10);
-      return year >= 2020 && year <= 2100;
-    })();
-
-    if (!isComplete) return;
-
+  const handleSaveOrder = async (order: any) => {
+    setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/orders/${orderId}/status`, {
+      const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          statusDates: {
-            [milestone]: dateStr
-          }
+          status: order.status,
+          expectedDeliveryDate: order.expectedDeliveryDate,
+          trackingId: order.trackingId,
+          statusDates: order.statusDates
         })
       });
       if (res.ok) {
-        showStatus('Order milestone date saved!');
-        // Do NOT call fetchOrders() here. 
-        // Calling it recreates the array and steals focus from the input while typing!
+        showStatus('Order saved successfully!');
       } else {
-        showStatus('Failed to update milestone date', 'error');
-        fetchOrders(); // Revert to DB state on failure
+        showStatus('Failed to save order', 'error');
       }
     } catch (err) {
-      showStatus('Error updating milestone date', 'error');
-      fetchOrders(); // Revert on failure
+      showStatus('Error saving order', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1689,24 +1681,9 @@ const App = () => {
                             value={order.status || 'Pending'}
                             onChange={async (e) => {
                               const newStatus = e.target.value;
-                              try {
-                                setIsLoading(true);
-                                const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ status: newStatus })
-                                });
-                                if (res.ok) {
-                                  showStatus('Order status updated successfully!');
-                                  fetchOrders();
-                                } else {
-                                  showStatus('Failed to update status', 'error');
-                                }
-                              } catch (err) {
-                                showStatus('Error updating status', 'error');
-                              } finally {
-                                setIsLoading(false);
-                              }
+                              setOrders(prevOrders => prevOrders.map(o =>
+                                o._id === order._id ? { ...o, status: newStatus } : o
+                              ));
                             }}
                             style={{
                               background: order.status === 'Cancelled' ? '#fee2e2' : (order.status === 'Pending' || !order.status) ? '#fef3c7' : '#d1fae5',
@@ -1789,38 +1766,10 @@ const App = () => {
                             value={order.expectedDeliveryDate || ''}
                             onChange={async (e) => {
                               const newDate = e.target.value;
-
-                              // Optimistically update local state to feel responsive and avoid focus theft
+                              // Optimistically update local state
                               setOrders(prevOrders => prevOrders.map(o =>
                                 o._id === order._id ? { ...o, expectedDeliveryDate: newDate } : o
                               ));
-
-                              // Only save when the date is fully cleared OR contains a completed 4-digit year (between 2020 and 2100)
-                              const isComplete = !newDate || (() => {
-                                const parts = newDate.split('-');
-                                if (parts.length !== 3) return false;
-                                const year = parseInt(parts[0], 10);
-                                return year >= 2020 && year <= 2100;
-                              })();
-
-                              if (!isComplete) return;
-
-                              try {
-                                const res = await fetch(`${API_BASE}/api/admin/orders/${order._id}/status`, {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ expectedDeliveryDate: newDate })
-                                });
-                                if (res.ok) {
-                                  showStatus('Expected delivery date updated!');
-                                } else {
-                                  showStatus('Failed to update expected delivery date', 'error');
-                                  fetchOrders(); // Revert to database state on failure
-                                }
-                              } catch (err) {
-                                showStatus('Error updating expected delivery date', 'error');
-                                fetchOrders();
-                              }
                             }}
                             style={{
                               padding: '4px 8px',
@@ -1831,6 +1780,33 @@ const App = () => {
                               cursor: 'pointer',
                               outline: 'none',
                               color: '#333'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>TRACKING ID</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. AWB123456789"
+                            value={order.trackingId || ''}
+                            onChange={async (e) => {
+                              const newTrackingId = e.target.value;
+                              // Optimistically update local state
+                              setOrders(prevOrders => prevOrders.map(o =>
+                                o._id === order._id ? { ...o, trackingId: newTrackingId } : o
+                              ));
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              border: '1px solid #ddd',
+                              background: '#fff',
+                              outline: 'none',
+                              color: '#333',
+                              width: '130px',
+                              textAlign: 'right'
                             }}
                           />
                         </div>
@@ -1957,7 +1933,10 @@ const App = () => {
                           <input
                             type="date"
                             value={order.statusDates?.delivered || ''}
-                            onChange={(e) => handleUpdateOrderDate(order._id, 'delivered', e.target.value)}
+                            onChange={(e) => {
+                              const newDate = e.target.value;
+                              setOrders(prevOrders => prevOrders.map(o => o._id === order._id ? { ...o, statusDates: { ...o.statusDates, delivered: newDate } } : o));
+                            }}
                             style={{
                               padding: '6px 10px',
                               fontSize: '12px',
@@ -1972,9 +1951,30 @@ const App = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                    <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
-                      🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
+
+                      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          className="primary-btn"
+                          onClick={() => handleSaveOrder(order)}
+                          style={{
+                            padding: '8px 24px',
+                            background: '#10b981',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          Save Order Updates
+                        </button>
+                      </div>
+
+                      <div className="lead-meta" style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+                        🕒 {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod}
+                      </div>
                     </div>
                   </div>
                 ))}

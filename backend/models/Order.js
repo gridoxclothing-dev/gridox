@@ -25,6 +25,7 @@ const OrderSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   discountAmount: { type: Number, default: 0 },
   couponCode: { type: String },
+  trackingId: { type: String },
   status: { type: String, default: 'Pending' },
   expectedDeliveryDate: { type: String },
   statusDates: {

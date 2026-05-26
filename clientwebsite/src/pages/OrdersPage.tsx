@@ -37,6 +37,7 @@ interface Order {
     pincode: string;
   };
   paymentMethod: string;
+  trackingId?: string;
 }
 
 const OrdersPage = () => {
@@ -257,13 +258,21 @@ const OrdersPage = () => {
                       </p>
                     )}
                   </div>
-                  <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${
-                    selectedOrder.status === 'Cancelled' 
-                      ? 'bg-red-100 text-red-700' 
-                      : 'bg-green-100 text-green-700'
-                  }`}>
-                    {selectedOrder.status === 'Cancelled' ? 'Cancelled' : 'On Track'}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${
+                      selectedOrder.status === 'Cancelled' 
+                        ? 'bg-red-100 text-red-700' 
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {selectedOrder.status === 'Cancelled' ? 'Cancelled' : 'On Track'}
+                    </span>
+                    {selectedOrder.trackingId && (
+                      <div className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">Tracking ID</span>
+                        <span className="text-xs font-black text-gray-900">{selectedOrder.trackingId}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {selectedOrder.status === 'Cancelled' ? (
@@ -410,8 +419,8 @@ const OrdersPage = () => {
                 )}
 
                 <div className="mt-8 p-4 bg-primary/5 rounded-2xl flex gap-3 items-start border border-primary/10">
-                  <Package size={20} className="text-primary shrink-0" />
-                  <div>
+                  <Package size={20} className="text-primary shrink-0 mt-0.5" />
+                  <div className="flex-1">
                     <p className="text-xs font-bold text-primary uppercase mb-1">Logistics Update</p>
                     <p className="text-[11px] text-gray-600 font-medium">Tracking link and delivery executive details will be sent via email once shipped.</p>
                   </div>

@@ -15,7 +15,7 @@ const ContactUs = () => {
           <div className="text-center mb-16">
             <h1 className="font-heading text-4xl md:text-5xl font-bold text-gray-900 mb-4">Contact GriDox</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Have a question about GriDox premium fashion or need assistance? The GriDox Coimbatore team is here to help. Reach out to GriDox through any of the channels below.
+              Have a question about GriDox premium fashion or need assistance? The GriDox team is here to help. Reach out to GriDox through any of the channels below.
             </p>
           </div>
 
@@ -37,7 +37,7 @@ const ContactUs = () => {
                   <Phone size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-1">Call GriDox Coimbatore</h3>
+                  <h3 className="font-bold text-gray-900 mb-1">Call GriDox</h3>
                   <p className="text-gray-600 text-sm">GriDox Support: Mon-Sat, 10:00 AM to 7:00 PM IST</p>
                   <a href="tel:+918110911118" className="text-[#8b231a] font-semibold mt-2 inline-block">+91 81109 11118</a>
                 </div>

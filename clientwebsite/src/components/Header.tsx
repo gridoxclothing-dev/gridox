@@ -10,7 +10,7 @@ const navLinks = [
   { name: "CATEGORIES" },
   { name: "ADDRESS" },
   { name: "BULK QUERIES" },
-  { name: "ABOUT US" },
+  { name: "CONTACT US" },
 ];
 
 function handleNavClick(name: string, navigate: ReturnType<typeof useNavigate>) { // fix: nav scroll links
@@ -248,7 +248,7 @@ const Header = () => {
 
             {/* Primary Navigation Links */}
             <div className="py-2">
-              {['HOME', 'CATEGORIES', 'BULK QUERIES', 'ABOUT US'].map((name) => (
+              {['HOME', 'CATEGORIES', 'BULK QUERIES', 'CONTACT US'].map((name) => (
                 <button
                   key={name}
                   onClick={() => { handleNavClick(name, navigate); setMenuOpen(false); }}
