@@ -301,18 +301,15 @@ const Header = () => {
                 <span className="text-muted-foreground text-[14px] font-medium tracking-wide">New Arrival</span>
               </button>
 
-              {['Contact Us'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    if (item === 'Contact Us') navigate('/contact');
-                  }}
-                  className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left"
-                >
-                  <span className="text-muted-foreground text-[14px] font-medium tracking-wide">{item}</span>
-                </button>
-              ))}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/contact');
+                }}
+                className="w-full flex items-center px-6 py-3.5 bg-background border-none cursor-pointer hover:bg-muted active:bg-muted text-left"
+              >
+                <span className="text-muted-foreground text-[14px] font-medium tracking-wide">Contact Us</span>
+              </button>
 
               <a
                 href="https://www.instagram.com/gridox.clothing"
