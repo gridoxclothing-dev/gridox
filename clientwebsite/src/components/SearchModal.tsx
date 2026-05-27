@@ -6,7 +6,21 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`/api/categories`);
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data);
+        }
+      } catch (err) {}
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -31,7 +45,14 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
         const res = await fetch(`/api/products`);
         if (res.ok) {
           const data = await res.json();
-          const filtered = data.filter((p: any) => p.name.toLowerCase().includes(query.toLowerCase()));
+          const searchTerms = query.toLowerCase().split(' ').filter(Boolean);
+          const filtered = data.filter((p: any) => {
+            const name = p.name?.toLowerCase() || '';
+            const categoryStr = Array.isArray(p.category) ? p.category.join(' ').toLowerCase() : (p.category?.toLowerCase() || '');
+            const searchableText = `${name} ${categoryStr}`;
+            
+            return searchTerms.every(term => searchableText.includes(term));
+          });
           setProducts(filtered.slice(0, 4));
         }
       } catch (err) {}
@@ -113,9 +134,15 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
               <div>
                   <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-8 mt-8 opacity-80">Popular Searches</p>
                   <div className="flex flex-col gap-4">
-                      <button onClick={() => handleRecentClick("dresses")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">dresses</button>
-                      <button onClick={() => handleRecentClick("shirt")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">shirt</button>
-                      <button onClick={() => handleRecentClick("jumpsuit")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">jumpsuit</button>
+                      {categories.length > 0 ? categories.map((cat: any) => (
+                        <button key={cat._id} onClick={() => handleRecentClick(cat.name)} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">{cat.name.toLowerCase()}</button>
+                      )) : (
+                        <>
+                          <button onClick={() => handleRecentClick("co-ords")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">co-ords</button>
+                          <button onClick={() => handleRecentClick("kurti")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">kurti</button>
+                          <button onClick={() => handleRecentClick("silk")} className="text-left text-sm font-body font-medium text-foreground/80 hover:text-primary transition-colors">silk</button>
+                        </>
+                      )}
                   </div>
               </div>
             </div>

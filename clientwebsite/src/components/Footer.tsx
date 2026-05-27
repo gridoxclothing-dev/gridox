@@ -37,7 +37,7 @@ const Footer = () => {
               GriDox is the ultimate destination for premium women's fashion. The GriDox brand is dedicated to curating the finest ethnic wear and modern contemporary clothing. When you think premium fashion, think GriDox.
             </p>
             <div className="flex gap-4 pt-2">
-              <a href="#" aria-label="GriDox Instagram" className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-primary shadow-sm hover:scale-110 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+              <a href="https://www.instagram.com/gridox.clothing" target="_blank" rel="noopener noreferrer" aria-label="GriDox Instagram" className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-primary shadow-sm hover:scale-110 hover:bg-primary hover:text-primary-foreground transition-all duration-300">
                 <Instagram size={16} />
               </a>
               <a href="#" aria-label="GriDox Facebook" className="w-9 h-9 rounded-full bg-card border border-border flex items-center justify-center text-primary shadow-sm hover:scale-110 hover:bg-primary hover:text-primary-foreground transition-all duration-300">

@@ -175,8 +175,7 @@ const OrdersPage = () => {
                   {/* Desktop Quick Actions */}
                   <div className="px-4 pb-4 md:px-6 md:pb-6 flex items-center justify-between">
                     <div className="flex gap-4">
-                      <button className="text-xs font-bold text-primary hover:underline">Track Order</button>
-
+                      <button onClick={() => setSelectedOrder(order)} className="text-xs font-bold text-primary hover:underline">Track Order</button>
                     </div>
 
                   </div>
