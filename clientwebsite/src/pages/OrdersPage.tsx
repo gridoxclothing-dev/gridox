@@ -235,8 +235,8 @@ const OrdersPage = () => {
 
               {/* Order Tracking Card */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm overflow-hidden relative">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
+                <div className="flex flex-col md:flex-row md:justify-between items-start gap-4 mb-8">
+                  <div className="w-full">
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`w-2.5 h-2.5 rounded-full ${selectedOrder.status === 'Cancelled' ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></div>
                       <h3 className={`text-xl font-black ${selectedOrder.status === 'Cancelled' ? 'text-red-600' : 'text-gray-900'}`}>{selectedOrder.status || 'Pending'}</h3>
@@ -257,7 +257,7 @@ const OrdersPage = () => {
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2">
                     <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${
                       selectedOrder.status === 'Cancelled' 
                         ? 'bg-red-100 text-red-700' 
